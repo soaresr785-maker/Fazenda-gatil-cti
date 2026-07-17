@@ -2,41 +2,30 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema Clínico Veterinário - Gestão Felina</title>
+    <title>Sistema Clínico Veterinário - Gestão Felina (Supabase)</title>
+    <!-- Carrega a biblioteca oficial do Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f1f5f9; padding: 20px; color: #1e293b; }
         .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        
         h1 { margin-bottom: 20px; font-size: 24px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
-        
-        /* Menu Superior */
         .nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
         .nav-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: 600; color: #64748b; transition: all 0.2s; }
         .nav-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
-        
-        /* Barra de Busca */
         .busca-container { margin-bottom: 25px; position: relative; }
         .busca-input { width: 100%; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 15px; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
         .busca-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        
-        /* Abas Principais */
         .aba-principal { display: none; }
         .aba-principal.active { display: block; }
-        
-        /* Formulário de Cadastro */
         .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .field { display: flex; flex-direction: column; gap: 5px; }
         .field label { font-size: 13px; font-weight: 600; color: #475569; }
         input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; }
         input[type="file"] { padding: 7px; background: #fff; cursor: pointer; }
         .btn-salvar { padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 200px; }
-        
-        /* Sub-seções de setores dentro do Gatil */
         .setor-container { margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .setor-titulo { font-size: 16px; font-weight: bold; color: #334155; margin-bottom: 12px; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; }
-
-        /* Grid de Gatos */
         .lista-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         .card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; gap: 12px; align-items: center; }
         .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
@@ -44,32 +33,23 @@
         .card-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 1px solid #cbd5e1; }
         .card-info h3 { color: #0f172a; font-size: 16px; margin-bottom: 2px; }
         .card-info p { font-size: 13px; color: #64748b; }
-
-        /* MODAL DO PRONTUÁRIO INDIVIDUAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; width: 95%; max-width: 850px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
         .modal-header { padding: 15px 20px; background: #0f172a; color: white; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
         .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-        
-        /* Sub-abas dentro do prontuário */
         .sub-nav { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 8px; overflow-x: auto; }
         .sub-btn { flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #475569; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
         .sub-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .sub-aba { display: none; }
         .sub-aba.active { display: block; }
-
-        /* Blocos Médicos Estruturados */
         .grid-ficha { display: grid; grid-template-columns: 120px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .ficha-foto { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1; background: #cbd5e1; }
         .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; }
-        
         .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .box-clinico h4 { margin-bottom: 10px; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; font-size: 15px; }
-        
         .mini-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; align-items: flex-end; }
         .mini-form button { padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
         .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .item-registro small { color: #94a3b8; display: block; margin-top: 4px; }
     </style>
@@ -85,12 +65,11 @@
         <button class="nav-btn" onclick="mudarAba('cti', this)">🏥 CTI</button>
     </div>
 
-    <!-- BARRA DE BUSCA DINÂMICA -->
     <div class="busca-container" id="containerBusca" style="display: none;">
         <input type="text" id="inputBusca" class="busca-input" placeholder="🔍 Buscar gatinho por Nome ou número do Microchip..." oninput="renderizarPaineis()">
     </div>
 
-    <!-- ABA PRINCIPAL: CADASTRO -->
+    <!-- CADASTRO -->
     <div id="cadastro" class="aba-principal active">
         <h2>Identificação Inicial</h2>
         <form id="formGato" onsubmit="adicionarGato(event)" style="margin-top: 15px;">
@@ -110,7 +89,6 @@
                         <option value="cti">CTI</option>
                     </select>
                 </div>
-                <!-- Campo Dinâmico de Setores do Gatil -->
                 <div class="field" id="campoSetorGatil">
                     <label>Setor do Gatil</label>
                     <select id="setorGatil">
@@ -127,45 +105,27 @@
         </form>
     </div>
 
-    <!-- ABA PRINCIPAL: GATIL (Dividido por Setores) -->
+    <!-- GATIL -->
     <div id="gatil" class="aba-principal">
         <h2>Setores do Gatil</h2>
         <div style="margin-top: 15px;">
-            <div class="setor-container">
-                <div class="setor-titulo">🏡 Gatil Livre</div>
-                <div id="setor-GatilLivre" class="lista-cards"></div>
-            </div>
-            <div class="setor-container">
-                <div class="setor-titulo">⭐ Especial 1</div>
-                <div id="setor-Especial1" class="lista-cards"></div>
-            </div>
-            <div class="setor-container">
-                <div class="setor-titulo">⭐ Especial 2</div>
-                <div id="setor-Especial2" class="lista-cards"></div>
-            </div>
-            <div class="setor-container">
-                <div class="setor-titulo">⭐ Especial 3</div>
-                <div id="setor-Especial3" class="lista-cards"></div>
-            </div>
-            <div class="setor-container">
-                <div class="setor-titulo">🧪 FIV</div>
-                <div id="setor-FIV" class="lista-cards"></div>
-            </div>
-            <div class="setor-container">
-                <div class="setor-titulo">🧪 FELV</div>
-                <div id="setor-FELV" class="lista-cards"></div>
-            </div>
+            <div class="setor-container"><div class="setor-titulo">🏡 Gatil Livre</div><div id="setor-GatilLivre" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo">⭐ Especial 1</div><div id="setor-Especial1" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo">⭐ Especial 2</div><div id="setor-Especial2" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo">⭐ Especial 3</div><div id="setor-Especial3" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo">🧪 FIV</div><div id="setor-FIV" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo">🧪 FELV</div><div id="setor-FELV" class="lista-cards"></div></div>
         </div>
     </div>
 
-    <!-- ABA PRINCIPAL: CTI -->
+    <!-- CTI -->
     <div id="cti" class="aba-principal">
         <h2>Pacientes Críticos (CTI)</h2>
         <div id="listaCti" class="lista-cards" style="margin-top: 15px;"></div>
     </div>
 </div>
 
-<!-- MODAL INDIVIDUAL (ÁREA INTEGRAL DO GATO) -->
+<!-- MODAL INDIVIDUAL -->
 <div id="modalProntuario" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -174,7 +134,6 @@
         </div>
         
         <div class="modal-body">
-            <!-- Sub-Navegação de Prontuários Médicos -->
             <div class="sub-nav">
                 <button class="sub-btn active" onclick="mudarSubAba('sub-identificacao', this)">📋 Identificação</button>
                 <button class="sub-btn" onclick="mudarSubAba('sub-prontuario', this)">🩺 Prontuário Clínico</button>
@@ -192,7 +151,7 @@
                 </div>
             </div>
 
-            <!-- SUB-ABA 2: 🩺 PRONTUÁRIO -->
+            <!-- SUB-ABA 2: PRONTUÁRIO -->
             <div id="sub-prontuario" class="sub-aba">
                 <div class="box-clinico">
                     <h4>Histórico Clínico & Diagnósticos</h4>
@@ -214,7 +173,7 @@
                 </div>
             </div>
 
-            <!-- SUB-ABA 3: 💊 TRATAMENTO -->
+            <!-- SUB-ABA 3: TRATAMENTO -->
             <div id="sub-tratamento" class="sub-aba">
                 <h3>Prescrição e Manejo de Fármacos</h3>
                 <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr 2fr auto;">
@@ -227,7 +186,7 @@
                 <div id="listaMedTratamentos"></div>
             </div>
 
-            <!-- SUB-ABA 4: 💉 VACINAÇÃO -->
+            <!-- SUB-ABA 4: VACINAÇÃO -->
             <div id="sub-vacinas" class="sub-aba">
                 <h3>Histórico de Imunização</h3>
                 <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr auto;">
@@ -239,7 +198,7 @@
                 <div id="listaMedVacinas"></div>
             </div>
 
-            <!-- SUB-ABA 5: 🚑 CTI -->
+            <!-- SUB-ABA 5: CTI -->
             <div id="sub-cti-dados" class="sub-aba">
                 <h3 style="color:#ef4444; margin-bottom:10px;">Monitoramento de Paciente Crítico</h3>
                 <div class="box-clinico" style="background:#fff5f5; border-color:#fca5a5;">
@@ -262,7 +221,7 @@
                 </div>
             </div>
 
-            <!-- SUB-ABA 6: 🏡 ADOÇÃO -->
+            <!-- SUB-ABA 6: ADOÇÃO -->
             <div id="sub-adocao" class="sub-aba">
                 <h3>Gerenciamento de Destino do Animal</h3>
                 <div class="box-clinico">
@@ -286,19 +245,34 @@
 </div>
 
 <script>
-    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v4')) || [];
+    // Configurações do Supabase prontas com as suas credenciais
+    const SUPABASE_URL = "https://eekbrwngdoiorplijizz.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVla2Jyd25nZG9pb3JwbGlqaXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2NTMsImV4cCI6MjA5OTczMjY1M30.mc4BAE3RV4OxqRV_gVc8D8qsbQHgonRSMLv4jCy7pmI";
+    
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let gatos = [];
     let idGatoSelecionado = null;
 
     document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
 
+    // Carrega dados da nuvem assim que o sistema inicia
+    async function carregarDadosDoBanco() {
+        try {
+            const { data, error } = await _supabase.from('gatos').select('*');
+            if (error) throw error;
+            gatos = data || [];
+            renderizarPaineis();
+        } catch (err) {
+            console.error("Erro ao carregar dados:", err.message);
+            alert("Erro ao conectar com o banco de dados.");
+        }
+    }
+
     function gerenciarCamposSetor() {
         const destino = document.getElementById('destino').value;
         const campoSetor = document.getElementById('campoSetorGatil');
-        if (destino === 'gatil') {
-            campoSetor.style.display = 'flex';
-        } else {
-            campoSetor.style.display = 'none';
-        }
+        campoSetor.style.display = (destino === 'gatil') ? 'flex' : 'none';
     }
 
     function mudarAba(id, btn) {
@@ -307,14 +281,8 @@
         document.getElementById(id).classList.add('active');
         btn.classList.add('active');
         
-        // Exibe a barra de busca apenas nas telas de listagem (Gatil e CTI)
         const containerBusca = document.getElementById('containerBusca');
-        if (id === 'gatil' || id === 'cti') {
-            containerBusca.style.display = 'block';
-        } else {
-            containerBusca.style.display = 'none';
-        }
-
+        containerBusca.style.display = (id === 'gatil' || id === 'cti') ? 'block' : 'none';
         renderizarPaineis();
     }
 
@@ -332,7 +300,6 @@
         const gMicrochip = document.getElementById('microchip').value || 'Não possui';
         const gDataEntrada = converterData(document.getElementById('dataEntrada').value);
 
-        // Compressor automático de imagem nativo para evitar estouro de memória no LocalStorage
         if (arquivoInput) {
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -340,18 +307,16 @@
                 img.src = event.target.result;
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const max_size = 300; // Resolução otimizada para foto de perfil da ficha
-                    let width = img.width;
-                    let height = img.height;
+                    const max_size = 300;
+                    let width = img.width, height = img.height;
                     if (width > height) {
                         if (width > max_size) { height *= max_size / width; width = max_size; }
                     } else {
                         if (height > max_size) { width *= max_size / height; height = max_size; }
                     }
                     canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2class');
                     canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    const dataUrlOtimizada = canvas.toDataURL('image/jpeg', 0.7); // 70% de qualidade compactada
+                    const dataUrlOtimizada = canvas.toDataURL('image/jpeg', 0.7);
                     gravarObjetoGato(gNome, dataUrlOtimizada, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
                 }
             }
@@ -362,21 +327,27 @@
         }
     }
 
-    function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, dataEntrada, destino, setorGatil) {
+    async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_gatil) {
         const novoGato = {
-            id: Date.now(), nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, dataEntrada, destino, setorGatil,
-            historicoClinico: '', diagnosticos: '', observacoesVet: '',
+            nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, data_entrada, destino, setor_gatil,
+            historico_clinico: '', diagnosticos: '', observacoes_vet: '',
             exames: [], tratamentos: [], vacinas: [],
-            ctiGaiola: '', ctiTemp: '', ctiFr: '', ctiFc: '', ctiAlim: '', ctiEvolucao: [],
-            adoStatus: 'Indisponível (Em Tratamento)', adoData: '', adoObs: ''
+            cti_gaiola: '', cti_temp: '', cti_fr: '', cti_fc: '', cti_alim: '', cti_evolucao: [],
+            ado_status: 'Indisponível (Em Tratamento)', ado_data: '', ado_obs: ''
         };
 
-        gatos.push(novoGato);
-        salvarDados();
-        document.getElementById('formGato').reset();
-        document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
-        gerenciarCamposSetor();
-        mudarAba(novoGato.destino, document.querySelectorAll('.nav-btn')[novoGato.destino === 'gatil' ? 1 : 2]);
+        try {
+            const { error } = await _supabase.from('gatos').insert([novoGato]);
+            if (error) throw error;
+            
+            document.getElementById('formGato').reset();
+            document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
+            gerenciarCamposSetor();
+            await carregarDadosDoBanco();
+            mudarAba(novoGato.destino, document.querySelectorAll('.nav-btn')[novoGato.destino === 'gatil' ? 1 : 2]);
+        } catch (err) {
+            alert("Erro ao salvar gatinho na nuvem: " + err.message);
+        }
     }
 
     function renderizarPaineis() {
@@ -384,50 +355,40 @@
         setoresIds.forEach(id => { const el = document.getElementById(`setor-${id}`); if(el) el.innerHTML = ''; });
         
         const divCti = document.getElementById('listaCti');
-        divCti.innerHTML = '';
+        if(divCti) divCti.innerHTML = '';
 
-        // Captura o termo digitado na barra de pesquisa (tudo em letras minúsculas para não dar erro de digitação)
         const termoBusca = document.getElementById('inputBusca').value.toLowerCase().trim();
 
         gatos.forEach(g => {
-            // Regra do Filtro: Verifica se o nome ou o microchip batem com a busca
             const bateNome = g.nome.toLowerCase().includes(termoBusca);
-            const bateMicrochip = g.microchip.toLowerCase().includes(termoBusca);
+            const bateMicrochip = (g.microchip || '').toLowerCase().includes(termoBusca);
 
-            // Se houver texto digitado e o gato não corresponder a nenhum critério, ele é ignorado na renderização
-            if (termoBusca !== '' && !bateNome && !bateMicrochip) {
-                return; 
-            }
+            if (termoBusca !== '' && !bateNome && !bateMicrochip) return;
 
             const cardHtml = `
                 <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
                     <img class="card-img" src="${g.foto}">
                     <div class="card-info">
                         <h3>🐾 ${g.nome}</h3>
-                        <p>Chip: ${g.microchip}</p>
+                        <p>Chip: ${g.microchip || 'N/A'}</p>
                         <p style="font-size:12px; margin-top:2px; color:#64748b;">Peso: ${g.peso} | Sexo: ${g.sexo}</p>
                     </div>
                 </div>`;
             
-            if (g.destino === 'cti') {
+            if (g.destino === 'cti' && divCti) {
                 divCti.innerHTML += cardHtml;
             } else if (g.destino === 'gatil') {
-                const idSetorTratado = g.setorGatil.replace(/\s+/g, '');
+                const idSetorTratado = g.setor_gatil.replace(/\s+/g, '');
                 const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
                 if (targetDiv) targetDiv.innerHTML += cardHtml;
             }
         });
 
-        // Alertas informativos de listas vazias
         setoresIds.forEach(id => {
             const el = document.getElementById(`setor-${id}`);
-            if(el && el.innerHTML === '') {
-                el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho correspondente encontrado.</p>';
-            }
+            if(el && el.innerHTML === '') el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho encontrado.</p>';
         });
-        if(divCti.innerHTML === '') {
-            divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho correspondente encontrado no CTI.</p>';
-        }
+        if(divCti && divCti.innerHTML === '') divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho no CTI.</p>';
     }
 
     function abrirProntuario(id) {
@@ -437,7 +398,7 @@
         document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
-        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setorGatil}`;
+        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setor_gatil}`;
 
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
@@ -446,26 +407,25 @@
             <p><strong>Idade:</strong> ${gato.idade}</p>
             <p><strong>Peso:</strong> ${gato.peso}</p>
             <p><strong>Microchip:</strong> ${gato.microchip}</p>
-            <p><strong>Data de Entrada:</strong> ${gato.dataEntrada}</p>
-            <p><strong>Setor/Ala Atual:</strong> <span style="font-weight:bold; color:${gato.destino==='cti'?'#ef4444':'#10b981'}">${localizacaoTexto}</span></p>
+            <p><strong>Data de Entrada:</strong> ${gato.data_entrada}</p>
+            <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.destino==='cti'?'#ef4444':'#10b981'}">${localizacaoTexto}</span></p>
         `;
 
-        document.getElementById('txtHistorico').value = gato.historicoClinico;
-        document.getElementById('txtDiagnostico').value = gato.diagnosticos;
-        document.getElementById('txtObsVet').value = gato.observacoesVet;
+        document.getElementById('txtHistorico').value = gato.historico_clinico || '';
+        document.getElementById('txtDiagnostico').value = gato.diagnosticos || '';
+        document.getElementById('txtObsVet').value = gato.observacoes_vet || '';
 
-        document.getElementById('ctiGaiola').value = gato.ctiGaiola;
-        document.getElementById('ctiTemp').value = gato.ctiTemp;
-        document.getElementById('ctiFr').value = gato.ctiFr;
-        document.getElementById('ctiFc').value = gato.ctiFc;
-        document.getElementById('ctiAlim').value = gato.ctiAlim;
+        document.getElementById('ctiGaiola').value = gato.cti_gaiola || '';
+        document.getElementById('ctiTemp').value = gato.cti_temp || '';
+        document.getElementById('ctiFr').value = gato.cti_fr || '';
+        document.getElementById('ctiFc').value = gato.cti_fc || '';
+        document.getElementById('ctiAlim').value = gato.cti_alim || '';
 
-        const btnSubCti = document.getElementById('btnSubCti');
-        if (gato.destino === 'cti') { btnSubCti.style.display = "block"; } else { btnSubCti.style.display = "none"; }
+        document.getElementById('btnSubCti').style.display = (gato.destino === 'cti') ? "block" : "none";
 
-        document.getElementById('adoStatus').value = gato.adoStatus;
-        document.getElementById('adoData').value = gato.adoData;
-        document.getElementById('adoObs').value = gato.adoObs;
+        document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
+        document.getElementById('adoData').value = gato.ado_data || '';
+        document.getElementById('adoObs').value = gato.ado_obs || '';
 
         atualizarListasInternasDoModal(gato);
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
@@ -484,44 +444,62 @@
         btn.classList.add('active');
     }
 
-    function atualizarCamposTexto() {
-        const gato = gatos.find(g => g.id === idGatoSelecionado);
-        gato.historicoClinico = document.getElementById('txtHistorico').value;
-        gato.diagnosticos = document.getElementById('txtDiagnostico').value;
-        gato.observacoesVet = document.getElementById('txtObsVet').value;
-        salvarDados();
-        alert('Textos clínicos gravados!');
+    async function atualizarCamposTexto() {
+        try {
+            const { error } = await _supabase.from('gatos').update({
+                historico_clinico: document.getElementById('txtHistorico').value,
+                diagnosticos: document.getElementById('txtDiagnostico').value,
+                observacoes_vet: document.getElementById('txtObsVet').value
+            }).eq('id', idGatoSelecionado);
+
+            if (error) throw error;
+            alert('Textos clínicos gravados na nuvem!');
+            await carregarDadosDoBanco();
+        } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
 
-    function salvarParametrosCti() {
-        const gato = gatos.find(g => g.id === idGatoSelecionado);
-        gato.ctiGaiola = document.getElementById('ctiGaiola').value;
-        gato.ctiTemp = document.getElementById('ctiTemp').value;
-        gato.ctiFr = document.getElementById('ctiFr').value;
-        gato.ctiFc = document.getElementById('ctiFc').value;
-        gato.ctiAlim = document.getElementById('ctiAlim').value;
-        salvarDados();
-        alert('Parâmetros vitais de CTI atualizados!');
+    async function salvarParametrosCti() {
+        try {
+            const { error } = await _supabase.from('gatos').update({
+                cti_gaiola: document.getElementById('ctiGaiola').value,
+                cti_temp: document.getElementById('ctiTemp').value,
+                cti_fr: document.getElementById('ctiFr').value,
+                cti_fc: document.getElementById('ctiFc').value,
+                cti_alim: document.getElementById('ctiAlim').value
+            }).eq('id', idGatoSelecionado);
+
+            if (error) throw error;
+            alert('Parâmetros vitais de CTI atualizados na nuvem!');
+            await carregarDadosDoBanco();
+        } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
 
-    function salvarStatusAdocao() {
-        const gato = gatos.find(g => g.id === idGatoSelecionado);
-        gato.adoStatus = document.getElementById('adoStatus').value;
-        gato.adoData = document.getElementById('adoData').value;
-        gato.adoObs = document.getElementById('adoObs').value;
-        salvarDados();
-        alert('Dados cadastrais de adoção salvos com sucesso!');
+    async function salvarStatusAdocao() {
+        try {
+            const { error } = await _supabase.from('gatos').update({
+                ado_status: document.getElementById('adoStatus').value,
+                ado_data: document.getElementById('adoData').value,
+                ado_obs: document.getElementById('adoObs').value
+            }).eq('id', idGatoSelecionado);
+
+            if (error) throw error;
+            alert('Dados de adoção salvos com sucesso!');
+            await carregarDadosDoBanco();
+        } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
 
-    function adicionarSubItem(tipo) {
+    async function adicionarSubItem(tipo) {
         const gato = gatos.find(g => g.id === idGatoSelecionado);
         const dataAgora = new Date().toLocaleString('pt-BR');
+        let dadosAtualizados = {};
 
         if (tipo === 'exames') {
             const nome = document.getElementById('exameNome').value;
             const res = document.getElementById('exameResultado').value;
             if(!nome) return;
-            gato.exames.unshift({ nome, res, data: dataAgora });
+            const lista = Array.isArray(gato.exames) ? gato.exames : [];
+            lista.unshift({ nome, res, data: dataAgora });
+            dadosAtualizados = { exames: lista };
             document.getElementById('exameNome').value = ''; document.getElementById('exameResultado').value = '';
         } 
         else if (tipo === 'tratamentos') {
@@ -530,7 +508,9 @@
             const hora = document.getElementById('tratoHorario').value;
             const resp = document.getElementById('tratoResp').value;
             if(!med) return;
-            gato.tratamentos.unshift({ med, dose, hora, resp, data: dataAgora });
+            const lista = Array.isArray(gato.tratamentos) ? gato.tratamentos : [];
+            lista.unshift({ med, dose, hora, resp, data: dataAgora });
+            dadosAtualizados = { tratamentos: lista };
             document.getElementById('tratoMed').value = ''; document.getElementById('tratoDose').value = ''; document.getElementById('tratoHorario').value = ''; document.getElementById('tratoResp').value = '';
         }
         else if (tipo === 'vacinas') {
@@ -538,34 +518,43 @@
             const aplicar = document.getElementById('vacData').value;
             const prox = document.getElementById('vacProxima').value;
             if(!nome) return;
-            gato.vacinas.unshift({ nome, aplicar: converterData(aplicar), prox: converterData(prox) });
+            const lista = Array.isArray(gato.vacinas) ? gato.vacinas : [];
+            lista.unshift({ nome, aplicar: converterData(aplicar), prox: converterData(prox) });
+            dadosAtualizados = { vacinas: lista };
             document.getElementById('vacNome').value = ''; document.getElementById('vacData').value = ''; document.getElementById('vacProxima').value = '';
         }
         else if (tipo === 'evolucao') {
             const texto = document.getElementById('ctiEvolucaoTexto').value;
             if(!texto) return;
-            gato.ctiEvolucao.unshift({ texto, data: dataAgora });
+            const lista = Array.isArray(gato.cti_evolucao) ? gato.cti_evolucao : [];
+            lista.unshift({ texto, data: dataAgora });
+            dadosAtualizados = { cti_evolucao: lista };
             document.getElementById('ctiEvolucaoTexto').value = '';
         }
 
-        salvarDados();
-        atualizarListasInternasDoModal(gato);
+        try {
+            const { error } = await _supabase.from('gatos').update(dadosAtualizados).eq('id', idGatoSelecionado);
+            if (error) throw error;
+            await carregarDadosDoBanco();
+            const gatoAtualizado = gatos.find(g => g.id === idGatoSelecionado);
+            atualizarListasInternasDoModal(gatoAtualizado);
+        } catch(err) { alert("Erro ao atualizar item: " + err.message); }
     }
 
     function atualizarListasInternasDoModal(gato) {
-        document.getElementById('listaMedExames').innerHTML = gato.exames.map(e => `
+        document.getElementById('listaMedExames').innerHTML = (gato.exames || []).map(e => `
             <div class="item-registro">📋 <strong>${e.nome}</strong> - Resultado: ${e.res} <small>⏱️ Gravado em: ${e.data}</small></div>
         `).join('');
 
-        document.getElementById('listaMedTratamentos').innerHTML = gato.tratamentos.map(t => `
+        document.getElementById('listaMedTratamentos').innerHTML = (gato.tratamentos || []).map(t => `
             <div class="item-registro">💊 <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp} <small>⏱️ Prescrito em: ${t.data}</small></div>
         `).join('');
 
-        document.getElementById('listaMedVacinas').innerHTML = gato.vacinas.map(v => `
+        document.getElementById('listaMedVacinas').innerHTML = (gato.vacinas || []).map(v => `
             <div class="item-registro">💉 <strong>${v.nome}</strong> | Aplicada em: ${v.aplicar || 'N/A'} | Próxima Dose: <span style="color:blue">${v.prox || 'Não exige'}</span></div>
         `).join('');
 
-        document.getElementById('listaMedEvolucao').innerHTML = gato.ctiEvolucao.map(ev => `
+        document.getElementById('listaMedEvolucao').innerHTML = (gato.cti_evolucao || []).map(ev => `
             <div class="item-registro" style="border-left: 3px solid #ef4444;">📈 ${ev.texto} <small>⏱️ Registro de Plantão: ${ev.data}</small></div>
         `).join('');
     }
@@ -576,13 +565,8 @@
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
-    function salvarDados() {
-        localStorage.setItem('bancoGatosPremium_v4', JSON.stringify(gatos));
-        renderizarPaineis();
-    }
-
     gerenciarCamposSetor();
-    renderizarPaineis();
+    carregarDadosDoBanco();
 </script>
 
 </body>

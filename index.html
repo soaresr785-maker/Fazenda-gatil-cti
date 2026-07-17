@@ -245,7 +245,6 @@
 </div>
 
 <script>
-    // Configurações do Supabase prontas com as suas credenciais
     const SUPABASE_URL = "https://eekbrwngdoiorplijizz.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVla2Jyd25nZG9pb3JwbGlqaXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2NTMsImV4cCI6MjA5OTczMjY1M30.mc4BAE3RV4OxqRV_gVc8D8qsbQHgonRSMLv4jCy7pmI";
     
@@ -256,7 +255,6 @@
 
     document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
 
-    // Carrega dados da nuvem assim que o sistema inicia
     async function carregarDadosDoBanco() {
         try {
             const { data, error } = await _supabase.from('gatos').select('*');
@@ -291,13 +289,19 @@
         
         const arquivoInput = document.getElementById('fotoArquivo').files[0];
         const destinoSelecionado = document.getElementById('destino').value;
-        const setorDefinido = (destinoSelecionado === 'gatil') ? document.getElementById('setorGatil').value : 'N/A';
+        
+        // Define o setor padrão baseado na ala escolhida para não enviar nulo
+        let setorDefinido = 'N/A';
+        if (destinoSelecionado === 'gatil') {
+            setorDefinido = document.getElementById('setorGatil').value;
+        } else if (destinoSelecionado === 'cti') {
+            setorDefinido = 'CTI';
+        }
         
         const gNome = document.getElementById('nome').value;
         const gSexo = document.getElementById('sexo').value;
         const gIdade = document.getElementById('idade').value || 'Não informada';
         
-        // SEGURANÇA MÁXIMA: Força a conversão para número decimal limpo (remove qualquer texto residual)
         const valorRaw = document.getElementById('peso').value;
         const gPeso = parseFloat(valorRaw); 
         
@@ -336,9 +340,12 @@
         }
     }
 
-    async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_gatil) {
+    async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_definido) {
+        // SOLUÇÃO: Enviando o valor tanto para a coluna "setor" quanto para "setor_gatil" para blindar o banco
         const novoGato = {
-            nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, data_entrada, destino, setor_gatil,
+            nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, data_entrada, destino, 
+            setor: setor_definido,
+            setor_gatil: setor_definido,
             historico_clinico: '', diagnosticos: '', observacoes_vet: '',
             exames: [], tratamentos: [], vacinas: [],
             cti_gaiola: '', cti_temp: '', cti_fr: '', cti_fc: '', cti_alim: '', cti_evolucao: [],
@@ -387,9 +394,13 @@
             if (g.destino === 'cti' && divCti) {
                 divCti.innerHTML += cardHtml;
             } else if (g.destino === 'gatil') {
-                const idSetorTratado = g.setor_gatil.replace(/\s+/g, '');
-                const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
-                if (targetDiv) targetDiv.innerHTML += cardHtml;
+                // Aceita tanto a nomenclatura antiga quanto a nova para renderização no painel
+                const nomeSetor = g.setor_gatil || g.setor || 'Gatil Livre';
+                if (nomeSetor !== 'N/A' && nomeSetor !== 'CTI') {
+                    const idSetorTratado = nomeSetor.replace(/\s+/g, '');
+                    const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
+                    if (targetDiv) targetDiv.innerHTML += cardHtml;
+                }
             }
         });
 
@@ -407,7 +418,8 @@
         document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
-        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setor_gatil}`;
+        const exibeSetor = gato.setor_gatil || gato.setor || 'Gatil Livre';
+        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
 
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
@@ -478,7 +490,7 @@
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
-            alert('Parâmetros vitais de CTI updated na nuvem!');
+            alert('Parâmetros vitais de CTI atualizados na nuvem!');
             await carregarDadosDoBanco();
         } catch(err) { alert("Erro ao salvar: " + err.message); }
     }

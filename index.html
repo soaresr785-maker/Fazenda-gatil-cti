@@ -59,15 +59,14 @@
         .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-pdf-link:hover { background: #1d4ed8; }
         
-        /* Rodapé de Créditos */
-        footer { 
-            text-align: center; 
-            padding: 30px 0 15px 0; 
-            font-size: 18px;            
-            color: #475569;            
-            font-weight: bold;         
-            letter-spacing: 0.5px;     
-        }
+        /* Nova Seção de Movimentação de Setor */
+        .box-transferencia { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-top: 15px; grid-column: span 2; display: flex; flex-direction: column; gap: 10px; }
+        .box-transferencia h4 { color: #1e40af; font-size: 14px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px; }
+        .form-transferencia { display: flex; gap: 10px; align-items: center; }
+        .btn-transferir { padding: 10px 15px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        .btn-transferir:hover { background: #1d4ed8; }
+
+        footer { text-align: center; padding: 30px 0 15px 0; font-size: 18px; color: #475569; font-weight: bold; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -100,16 +99,10 @@
                 <div class="field"><label>Microchip</label><input type="text" id="microchip" placeholder="Código do chip"></div>
                 <div class="field"><label>Data de Entrada</label><input type="date" id="dataEntrada" required></div>
                 <div class="field">
-                    <label>Ala Inicial</label>
-                    <select id="destino" onchange="gerenciarCamposSetor()">
-                        <option value="gatil">Gatil</option>
-                        <option value="cti">CTI</option>
-                    </select>
-                </div>
-                <div class="field" id="campoSetorGatil">
-                    <label>Setor do Gatil</label>
+                    <label>Setor Inicial</label>
                     <select id="setorGatil">
                         <option value="Gatil Livre">Gatil Livre</option>
+                        <option value="CTI">CTI</option>
                         <option value="Especial 1">Especial 1</option>
                         <option value="Especial 2">Especial 2</option>
                         <option value="Especial 3">Especial 3</option>
@@ -176,6 +169,23 @@
                         <button class="btn-alterar-foto" onclick="document.getElementById('alterarFotoInput').click()">📸 Alterar Foto</button>
                     </div>
                     <div class="ficha-dados" id="medicoDadosGerais"></div>
+                    
+                    <!-- Nova Seção de Transferência Rápida de Setor -->
+                    <div class="box-transferencia" id="containerSecaoTransferencia">
+                        <h4>🔄 Movimentação / Transferência Interna de Setor</h4>
+                        <div class="form-transferencia">
+                            <select id="selectMudarSetor">
+                                <option value="Gatil Livre">Gatil Livre</option>
+                                <option value="CTI">CTI</option>
+                                <option value="Especial 1">Especial 1</option>
+                                <option value="Especial 2">Especial 2</option>
+                                <option value="Especial 3">Especial 3</option>
+                                <option value="FIV">FIV</option>
+                                <option value="FELV">FELV</option>
+                            </select>
+                            <button class="btn-transferir" onclick="transferirGatoDeSetor()">Transferir de Setor</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -309,12 +319,6 @@
         }
     }
 
-    function gerenciarCamposSetor() {
-        const destino = document.getElementById('destino').value;
-        const campoSetor = document.getElementById('campoSetorGatil');
-        campoSetor.style.display = (destino === 'gatil') ? 'flex' : 'none';
-    }
-
     function alternarCamposDesfecho() {
         const status = document.getElementById('adoStatus').value;
         const cAdocao = document.getElementById('containerDataAdocao');
@@ -347,17 +351,8 @@
         e.preventDefault();
         
         const arquivoInput = document.getElementById('fotoArquivo').files[0];
-        const destinoSelecionado = document.getElementById('destino').value;
-        
-        let setorDefinido = "Gatil Livre"; 
-        if (destinoSelecionado === 'cti') {
-            setorDefinido = "CTI";
-        } else {
-            const valorSelect = document.getElementById('setorGatil').value;
-            if (valorSelect && valorSelect.trim() !== "") {
-                setorDefinido = valorSelect;
-            }
-        }
+        const setorDefinido = document.getElementById('setorGatil').value;
+        const destinoSelecionado = (setorDefinido === 'CTI') ? 'cti' : 'gatil';
         
         const gNome = document.getElementById('nome').value;
         const gSexo = document.getElementById('sexo').value;
@@ -435,7 +430,6 @@
             
             document.getElementById('formGato').reset();
             document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
-            gerenciarCamposSetor();
             await carregarDadosDoBanco();
             mudarAba(novoGato.destino, document.querySelectorAll('.nav-btn')[novoGato.destino === 'gatil' ? 1 : 2]);
         } catch (err) {
@@ -501,7 +495,6 @@
 
             if (isObito) {
                 if (divObitos) {
-                    /* Alteração de segurança para evitar crash caso a coluna não exista */
                     const motivoObito = g['obito_causa'] || g.ado_obs || 'Não descrita';
                     divObitos.innerHTML += `
                         <div class="card card-obito" onclick="abrirProntuario(${g.id})">
@@ -554,7 +547,7 @@
         document.getElementById('medicoFoto').src = gato.foto;
         
         const exibeSetor = gato.setor || gato.setor_gatil || 'Gatil Livre';
-        let localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
+        let localizacaoTexto = gato.destino === 'cti' ? 'CTI' : exibeSetor;
         if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
 
         document.getElementById('medicoDadosGerais').innerHTML = `
@@ -567,6 +560,10 @@
             <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
             <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.ado_status==='Óbito'?'#64748b':(gato.destino==='cti'?'#ef4444':'#10b981')}">${localizacaoTexto}</span></p>
         `;
+
+        // Oculta a caixa de transferência rápida se o animal estiver em óbito
+        document.getElementById('containerSecaoTransferencia').style.display = (gato.ado_status === 'Óbito') ? 'none' : 'flex';
+        document.getElementById('selectMudarSetor').value = (gato.destino === 'cti') ? 'CTI' : exibeSetor;
 
         document.getElementById('txtHistorico').value = gato.historico_clinico || '';
         document.getElementById('txtDiagnostico').value = gato.diagnosticos || '';
@@ -583,7 +580,6 @@
         document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
         document.getElementById('adoData').value = gato.ado_data || '';
         
-        /* Proteção colchetes de string para evitar travar a renderização das colunas opcionais */
         document.getElementById('obitoDataHora').value = gato['obito_data_hora'] || '';
         document.getElementById('obitoCausa').value = gato['obito_causa'] || '';
         document.getElementById('adoObs').value = gato.ado_obs || '';
@@ -592,6 +588,27 @@
         atualizarListasInternasDoModal(gato);
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
+    }
+
+    async function transferirGatoDeSetor() {
+        const novoSetor = document.getElementById('selectMudarSetor').value;
+        const novoDestino = (novoSetor === 'CTI') ? 'cti' : 'gatil';
+
+        try {
+            const { error } = await _supabase.from('gatos').update({
+                destino: novoDestino,
+                setor: novoSetor,
+                setor_gatil: novoSetor
+            }).eq('id', idGatoSelecionado);
+
+            if (error) throw error;
+            
+            alert(`Paciente transferido para o setor: ${novoSetor}!`);
+            fecharModal();
+            await carregarDadosDoBanco();
+        } catch (err) {
+            alert("Erro ao transferir de setor no banco de dados: " + err.message);
+        }
     }
 
     function fecharModal() {
@@ -631,7 +648,7 @@
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
-            alert('Parâmetros vitais de CTI atualizados na nuvem!');
+            alert('Parâmetros vitais de CTI updated na nuvem!');
             await carregarDadosDoBanco();
         } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
@@ -644,8 +661,6 @@
             ado_obs: document.getElementById('adoObs').value
         };
 
-        /* Só tenta salvar os novos campos se o status for Óbito. 
-           Caso a tabela falhe por falta da coluna, o catch gerencia e avisa o usuário. */
         if (status === 'Óbito') {
             payload.obito_data_hora = document.getElementById('obitoDataHora').value;
             payload.obito_causa = document.getElementById('obitoCausa').value;
@@ -735,7 +750,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function ejecutarUpdateSubItem(dados) {
+    async function executarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;
@@ -786,7 +801,6 @@
         return dataString;
     }
 
-    gerenciarCamposSetor();
     carregarDadosDoBanco();
 </script>
 

@@ -298,7 +298,9 @@
         const gIdade = document.getElementById('idade').value || 'Não informada';
         const gPeso = document.getElementById('peso').value + ' kg';
         const gMicrochip = document.getElementById('microchip').value || 'Não possui';
-        const gDataEntrada = converterData(document.getElementById('dataEntrada').value);
+        
+        // AJUSTE: Envia o valor nativo do input (AAAA-MM-DD) direto para o banco aceitar
+        const gDataEntrada = document.getElementById('dataEntrada').value; 
 
         if (arquivoInput) {
             const reader = new FileReader();
@@ -400,6 +402,7 @@
         
         const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setor_gatil}`;
 
+        // Exibe a data de forma amigável (DD/MM/AAAA) no visual do modal
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
             <p><strong>Espécie:</strong> ${gato.especie}</p>
@@ -407,7 +410,7 @@
             <p><strong>Idade:</strong> ${gato.idade}</p>
             <p><strong>Peso:</strong> ${gato.peso}</p>
             <p><strong>Microchip:</strong> ${gato.microchip}</p>
-            <p><strong>Data de Entrada:</strong> ${gato.data_entrada}</p>
+            <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
             <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.destino==='cti'?'#ef4444':'#10b981'}">${localizacaoTexto}</span></p>
         `;
 
@@ -561,8 +564,12 @@
 
     function converterData(dataString) {
         if(!dataString) return '';
-        const partes = dataString.split('-');
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        // Trata strings que já venham formatadas ou no formato ISO/HTML AAAA-MM-DD
+        if (dataString.includes('-')) {
+            const partes = dataString.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return dataString;
     }
 
     gerenciarCamposSetor();

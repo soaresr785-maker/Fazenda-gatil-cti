@@ -11,9 +11,14 @@
         h1 { margin-bottom: 20px; font-size: 24px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
         
         /* Menu Superior */
-        .nav { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
         .nav-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: 600; color: #64748b; transition: all 0.2s; }
         .nav-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        
+        /* Barra de Busca */
+        .busca-container { margin-bottom: 25px; position: relative; }
+        .busca-input { width: 100%; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 15px; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+        .busca-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         
         /* Abas Principais */
         .aba-principal { display: none; }
@@ -80,13 +85,17 @@
         <button class="nav-btn" onclick="mudarAba('cti', this)">🏥 CTI</button>
     </div>
 
+    <!-- BARRA DE BUSCA DINÂMICA -->
+    <div class="busca-container" id="containerBusca" style="display: none;">
+        <input type="text" id="inputBusca" class="busca-input" placeholder="🔍 Buscar gatinho por Nome ou número do Microchip..." oninput="renderizarPaineis()">
+    </div>
+
     <!-- ABA PRINCIPAL: CADASTRO -->
     <div id="cadastro" class="aba-principal active">
         <h2>Identificação Inicial</h2>
         <form id="formGato" onsubmit="adicionarGato(event)" style="margin-top: 15px;">
             <div class="form-group">
                 <div class="field"><label>Nome</label><input type="text" id="nome" required placeholder="Ex: Mingau"></div>
-                <!-- NOVO CAMPO: UPLOAD DE ARQUIVO DE FOTO -->
                 <div class="field"><label>Foto do Gato</label><input type="file" id="fotoArquivo" accept="image/*"></div>
                 <div class="field"><label>Espécie</label><input type="text" id="especie" value="Felina (Gato)" readonly></div>
                 <div class="field"><label>Sexo</label><select id="sexo"><option value="Macho">Macho</option><option value="Fêmea">Fêmea</option></select></div>
@@ -277,7 +286,7 @@
 </div>
 
 <script>
-    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v3')) || [];
+    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v4')) || [];
     let idGatoSelecionado = null;
 
     document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
@@ -297,10 +306,18 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         btn.classList.add('active');
+        
+        // Exibe a barra de busca apenas nas telas de listagem (Gatil e CTI)
+        const containerBusca = document.getElementById('containerBusca');
+        if (id === 'gatil' || id === 'cti') {
+            containerBusca.style.display = 'block';
+        } else {
+            containerBusca.style.display = 'none';
+        }
+
         renderizarPaineis();
     }
 
-    // Processa o salvamento do gato tratando o arquivo de imagem anexado
     function adicionarGato(e) {
         e.preventDefault();
         
@@ -315,34 +332,39 @@
         const gMicrochip = document.getElementById('microchip').value || 'Não possui';
         const gDataEntrada = converterData(document.getElementById('dataEntrada').value);
 
-        // Se o usuário anexou um arquivo, vamos ler esse arquivo e transformar em texto Base64
+        // Compressor automático de imagem nativo para evitar estouro de memória no LocalStorage
         if (arquivoInput) {
             const reader = new FileReader();
-            reader.onloadend = function() {
-                gravarObjetoGato(gNome, reader.result, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const max_size = 300; // Resolução otimizada para foto de perfil da ficha
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > max_size) { height *= max_size / width; width = max_size; }
+                    } else {
+                        if (height > max_size) { width *= max_size / height; height = max_size; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2class');
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    const dataUrlOtimizada = canvas.toDataURL('image/jpeg', 0.7); // 70% de qualidade compactada
+                    gravarObjetoGato(gNome, dataUrlOtimizada, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
+                }
             }
             reader.readAsDataURL(arquivoInput);
         } else {
-            // Imagem padrão caso nenhum arquivo seja anexado
             const fotoPadrao = 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150';
             gravarObjetoGato(gNome, fotoPadrao, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
         }
     }
 
-    // Estrutura o objeto final e armazena na lista
     function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, dataEntrada, destino, setorGatil) {
         const novoGato = {
-            id: Date.now(),
-            nome: nome,
-            foto: foto,
-            especie: "Felina (Gato)",
-            sexo: sexo,
-            idade: idade,
-            peso: peso,
-            microchip: microchip,
-            dataEntrada: dataEntrada,
-            destino: destino,
-            setorGatil: setorGatil,
+            id: Date.now(), nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, dataEntrada, destino, setorGatil,
             historicoClinico: '', diagnosticos: '', observacoesVet: '',
             exames: [], tratamentos: [], vacinas: [],
             ctiGaiola: '', ctiTemp: '', ctiFr: '', ctiFc: '', ctiAlim: '', ctiEvolucao: [],
@@ -359,22 +381,31 @@
 
     function renderizarPaineis() {
         const setoresIds = ['GatilLivre', 'Especial1', 'Especial2', 'Especial3', 'FIV', 'FELV'];
-        setoresIds.forEach(id => {
-            const el = document.getElementById(`setor-${id}`);
-            if(el) el.innerHTML = '';
-        });
-
+        setoresIds.forEach(id => { const el = document.getElementById(`setor-${id}`); if(el) el.innerHTML = ''; });
+        
         const divCti = document.getElementById('listaCti');
         divCti.innerHTML = '';
 
+        // Captura o termo digitado na barra de pesquisa (tudo em letras minúsculas para não dar erro de digitação)
+        const termoBusca = document.getElementById('inputBusca').value.toLowerCase().trim();
+
         gatos.forEach(g => {
+            // Regra do Filtro: Verifica se o nome ou o microchip batem com a busca
+            const bateNome = g.nome.toLowerCase().includes(termoBusca);
+            const bateMicrochip = g.microchip.toLowerCase().includes(termoBusca);
+
+            // Se houver texto digitado e o gato não corresponder a nenhum critério, ele é ignorado na renderização
+            if (termoBusca !== '' && !bateNome && !bateMicrochip) {
+                return; 
+            }
+
             const cardHtml = `
                 <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
                     <img class="card-img" src="${g.foto}">
                     <div class="card-info">
                         <h3>🐾 ${g.nome}</h3>
-                        <p>Peso: ${g.peso} | Sexo: ${g.sexo}</p>
-                        <p style="color:#3b82f6; font-weight:bold; font-size:11px; margin-top:4px;">📋 ABRIR PRONTUÁRIO</p>
+                        <p>Chip: ${g.microchip}</p>
+                        <p style="font-size:12px; margin-top:2px; color:#64748b;">Peso: ${g.peso} | Sexo: ${g.sexo}</p>
                     </div>
                 </div>`;
             
@@ -387,14 +418,15 @@
             }
         });
 
+        // Alertas informativos de listas vazias
         setoresIds.forEach(id => {
             const el = document.getElementById(`setor-${id}`);
             if(el && el.innerHTML === '') {
-                el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho alocado aqui.</p>';
+                el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho correspondente encontrado.</p>';
             }
         });
         if(divCti.innerHTML === '') {
-            divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum paciente crítico no CTI.</p>';
+            divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho correspondente encontrado no CTI.</p>';
         }
     }
 
@@ -429,18 +461,13 @@
         document.getElementById('ctiAlim').value = gato.ctiAlim;
 
         const btnSubCti = document.getElementById('btnSubCti');
-        if (gato.destino === 'cti') {
-            btnSubCti.style.display = "block";
-        } else {
-            btnSubCti.style.display = "none";
-        }
+        if (gato.destino === 'cti') { btnSubCti.style.display = "block"; } else { btnSubCti.style.display = "none"; }
 
         document.getElementById('adoStatus').value = gato.adoStatus;
         document.getElementById('adoData').value = gato.adoData;
         document.getElementById('adoObs').value = gato.adoObs;
 
         atualizarListasInternasDoModal(gato);
-        
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
     }
@@ -550,7 +577,7 @@
     }
 
     function salvarDados() {
-        localStorage.setItem('bancoGatosPremium_v3', JSON.stringify(gatos));
+        localStorage.setItem('bancoGatosPremium_v4', JSON.stringify(gatos));
         renderizarPaineis();
     }
 

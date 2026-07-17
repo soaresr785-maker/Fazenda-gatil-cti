@@ -24,8 +24,13 @@
         .field { display: flex; flex-direction: column; gap: 5px; }
         .field label { font-size: 13px; font-weight: 600; color: #475569; }
         input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; }
+        input[type="file"] { padding: 7px; background: #fff; cursor: pointer; }
         .btn-salvar { padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 200px; }
         
+        /* Sub-seções de setores dentro do Gatil */
+        .setor-container { margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .setor-titulo { font-size: 16px; font-weight: bold; color: #334155; margin-bottom: 12px; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; }
+
         /* Grid de Gatos */
         .lista-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         .card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; gap: 12px; align-items: center; }
@@ -81,23 +86,67 @@
         <form id="formGato" onsubmit="adicionarGato(event)" style="margin-top: 15px;">
             <div class="form-group">
                 <div class="field"><label>Nome</label><input type="text" id="nome" required placeholder="Ex: Mingau"></div>
-                <div class="field"><label>Link da Foto (URL)</label><input type="text" id="foto" placeholder="URL da foto ou deixe em branco"></div>
+                <!-- NOVO CAMPO: UPLOAD DE ARQUIVO DE FOTO -->
+                <div class="field"><label>Foto do Gato</label><input type="file" id="fotoArquivo" accept="image/*"></div>
                 <div class="field"><label>Espécie</label><input type="text" id="especie" value="Felina (Gato)" readonly></div>
                 <div class="field"><label>Sexo</label><select id="sexo"><option value="Macho">Macho</option><option value="Fêmea">Fêmea</option></select></div>
                 <div class="field"><label>Idade</label><input type="text" id="idade" placeholder="Ex: 3 anos"></div>
                 <div class="field"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" required placeholder="Ex: 4.2"></div>
                 <div class="field"><label>Microchip</label><input type="text" id="microchip" placeholder="Código do chip"></div>
                 <div class="field"><label>Data de Entrada</label><input type="date" id="dataEntrada" required></div>
-                <div class="field"><label>Ala Inicial</label><select id="destino"><option value="gatil">Gatil</option><option value="cti">CTI</option></select></div>
+                <div class="field">
+                    <label>Ala Inicial</label>
+                    <select id="destino" onchange="gerenciarCamposSetor()">
+                        <option value="gatil">Gatil</option>
+                        <option value="cti">CTI</option>
+                    </select>
+                </div>
+                <!-- Campo Dinâmico de Setores do Gatil -->
+                <div class="field" id="campoSetorGatil">
+                    <label>Setor do Gatil</label>
+                    <select id="setorGatil">
+                        <option value="Gatil Livre">Gatil Livre</option>
+                        <option value="Especial 1">Especial 1</option>
+                        <option value="Especial 2">Especial 2</option>
+                        <option value="Especial 3">Especial 3</option>
+                        <option value="FIV">FIV</option>
+                        <option value="FELV">FELV</option>
+                    </select>
+                </div>
             </div>
             <button type="submit" class="btn-salvar">Criar Prontuário</button>
         </form>
     </div>
 
-    <!-- ABA PRINCIPAL: GATIL -->
+    <!-- ABA PRINCIPAL: GATIL (Dividido por Setores) -->
     <div id="gatil" class="aba-principal">
-        <h2>Pacientes no Gatil</h2>
-        <div id="listaGatil" class="lista-cards" style="margin-top: 15px;"></div>
+        <h2>Setores do Gatil</h2>
+        <div style="margin-top: 15px;">
+            <div class="setor-container">
+                <div class="setor-titulo">🏡 Gatil Livre</div>
+                <div id="setor-GatilLivre" class="lista-cards"></div>
+            </div>
+            <div class="setor-container">
+                <div class="setor-titulo">⭐ Especial 1</div>
+                <div id="setor-Especial1" class="lista-cards"></div>
+            </div>
+            <div class="setor-container">
+                <div class="setor-titulo">⭐ Especial 2</div>
+                <div id="setor-Especial2" class="lista-cards"></div>
+            </div>
+            <div class="setor-container">
+                <div class="setor-titulo">⭐ Especial 3</div>
+                <div id="setor-Especial3" class="lista-cards"></div>
+            </div>
+            <div class="setor-container">
+                <div class="setor-titulo">🧪 FIV</div>
+                <div id="setor-FIV" class="lista-cards"></div>
+            </div>
+            <div class="setor-container">
+                <div class="setor-titulo">🧪 FELV</div>
+                <div id="setor-FELV" class="lista-cards"></div>
+            </div>
+        </div>
     </div>
 
     <!-- ABA PRINCIPAL: CTI -->
@@ -111,7 +160,7 @@
 <div id="modalProntuario" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 id="modalNomeGato">🐾 Ficha Clínica</h2>
+            <h2 id="modalNomeGato">🐾 Ficha Médica Completa</h2>
             <button class="close-btn" onclick="fecharModal()">&times;</button>
         </div>
         
@@ -197,7 +246,7 @@
                 <div class="box-clinico">
                     <h4>📋 Evolução Diária / Plantão</h4>
                     <div class="mini-form" style="grid-template-columns: 1fr auto;">
-                        <div class="field"><label>Anotação de Evolução</label><input type="text" id="ctiEvolucaoTexto" placeholder="Ex: Apresentou melhora no padrão respiratório, ativo."></div>
+                        <div class="field"><label>Anotação de Evolução</label><input type="text" id="ctiEvolucaoTexto" placeholder="Ex: Apresentou melhora no padrão respiratório."></div>
                         <button style="background:#ef4444;" onclick="adicionarSubItem('evolucao')">Inserir</button>
                     </div>
                     <div id="listaMedEvolucao"></div>
@@ -228,12 +277,20 @@
 </div>
 
 <script>
-    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v1')) || [];
+    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v3')) || [];
     let idGatoSelecionado = null;
 
-    // Seta data de hoje automática no campo de entrada
-    document.getElementById('dataEntrada').valueToDate = new Date();
     document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
+
+    function gerenciarCamposSetor() {
+        const destino = document.getElementById('destino').value;
+        const campoSetor = document.getElementById('campoSetorGatil');
+        if (destino === 'gatil') {
+            campoSetor.style.display = 'flex';
+        } else {
+            campoSetor.style.display = 'none';
+        }
+    }
 
     function mudarAba(id, btn) {
         document.querySelectorAll('.aba-principal').forEach(a => a.classList.remove('active'));
@@ -243,32 +300,52 @@
         renderizarPaineis();
     }
 
+    // Processa o salvamento do gato tratando o arquivo de imagem anexado
     function adicionarGato(e) {
         e.preventDefault();
         
-        // Se não colocar link de foto, joga uma imagem de gatinho padrão
-        const urlFotoDef = document.getElementById('foto').value || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150';
+        const arquivoInput = document.getElementById('fotoArquivo').files[0];
+        const destinoSelecionado = document.getElementById('destino').value;
+        const setorDefinido = (destinoSelecionado === 'gatil') ? document.getElementById('setorGatil').value : 'N/A';
+        
+        const gNome = document.getElementById('nome').value;
+        const gSexo = document.getElementById('sexo').value;
+        const gIdade = document.getElementById('idade').value || 'Não informada';
+        const gPeso = document.getElementById('peso').value + ' kg';
+        const gMicrochip = document.getElementById('microchip').value || 'Não possui';
+        const gDataEntrada = converterData(document.getElementById('dataEntrada').value);
 
+        // Se o usuário anexou um arquivo, vamos ler esse arquivo e transformar em texto Base64
+        if (arquivoInput) {
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                gravarObjetoGato(gNome, reader.result, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
+            }
+            reader.readAsDataURL(arquivoInput);
+        } else {
+            // Imagem padrão caso nenhum arquivo seja anexado
+            const fotoPadrao = 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150';
+            gravarObjetoGato(gNome, fotoPadrao, gSexo, gIdade, gPeso, gMicrochip, gDataEntrada, destinoSelecionado, setorDefinido);
+        }
+    }
+
+    // Estrutura o objeto final e armazena na lista
+    function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, dataEntrada, destino, setorGatil) {
         const novoGato = {
             id: Date.now(),
-            nome: document.getElementById('nome').value,
-            foto: urlFotoDef,
+            nome: nome,
+            foto: foto,
             especie: "Felina (Gato)",
-            sexo: document.getElementById('sexo').value,
-            idade: document.getElementById('idade').value || 'Não informada',
-            peso: document.getElementById('peso').value + ' kg',
-            microchip: document.getElementById('microchip').value || 'Não possui',
-            dataEntrada: converterData(document.getElementById('dataEntrada').value),
-            destino: document.getElementById('destino').value,
-            
-            // Ficha Clínica Básica
+            sexo: sexo,
+            idade: idade,
+            peso: peso,
+            microchip: microchip,
+            dataEntrada: dataEntrada,
+            destino: destino,
+            setorGatil: setorGatil,
             historicoClinico: '', diagnosticos: '', observacoesVet: '',
             exames: [], tratamentos: [], vacinas: [],
-            
-            // CTI
             ctiGaiola: '', ctiTemp: '', ctiFr: '', ctiFc: '', ctiAlim: '', ctiEvolucao: [],
-            
-            // Adoção
             adoStatus: 'Indisponível (Em Tratamento)', adoData: '', adoObs: ''
         };
 
@@ -276,13 +353,18 @@
         salvarDados();
         document.getElementById('formGato').reset();
         document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
+        gerenciarCamposSetor();
         mudarAba(novoGato.destino, document.querySelectorAll('.nav-btn')[novoGato.destino === 'gatil' ? 1 : 2]);
     }
 
     function renderizarPaineis() {
-        const divGatil = document.getElementById('listaGatil');
+        const setoresIds = ['GatilLivre', 'Especial1', 'Especial2', 'Especial3', 'FIV', 'FELV'];
+        setoresIds.forEach(id => {
+            const el = document.getElementById(`setor-${id}`);
+            if(el) el.innerHTML = '';
+        });
+
         const divCti = document.getElementById('listaCti');
-        divGatil.innerHTML = '';
         divCti.innerHTML = '';
 
         gatos.forEach(g => {
@@ -296,9 +378,24 @@
                     </div>
                 </div>`;
             
-            if (g.destino === 'gatil') divGatil.innerHTML += cardHtml;
-            else divCti.innerHTML += cardHtml;
+            if (g.destino === 'cti') {
+                divCti.innerHTML += cardHtml;
+            } else if (g.destino === 'gatil') {
+                const idSetorTratado = g.setorGatil.replace(/\s+/g, '');
+                const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
+                if (targetDiv) targetDiv.innerHTML += cardHtml;
+            }
         });
+
+        setoresIds.forEach(id => {
+            const el = document.getElementById(`setor-${id}`);
+            if(el && el.innerHTML === '') {
+                el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho alocado aqui.</p>';
+            }
+        });
+        if(divCti.innerHTML === '') {
+            divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum paciente crítico no CTI.</p>';
+        }
     }
 
     function abrirProntuario(id) {
@@ -308,7 +405,8 @@
         document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
-        // Renderiza Dados da aba Identificação
+        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setorGatil}`;
+
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
             <p><strong>Espécie:</strong> ${gato.especie}</p>
@@ -317,22 +415,19 @@
             <p><strong>Peso:</strong> ${gato.peso}</p>
             <p><strong>Microchip:</strong> ${gato.microchip}</p>
             <p><strong>Data de Entrada:</strong> ${gato.dataEntrada}</p>
-            <p><strong>Setor Atual:</strong> <span style="text-transform:uppercase; font-weight:bold; color:${gato.destino==='cti'?'red':'green'}">${gato.destino}</span></p>
+            <p><strong>Setor/Ala Atual:</strong> <span style="font-weight:bold; color:${gato.destino==='cti'?'#ef4444':'#10b981'}">${localizacaoTexto}</span></p>
         `;
 
-        // Carrega inputs de texto das fichas
         document.getElementById('txtHistorico').value = gato.historicoClinico;
         document.getElementById('txtDiagnostico').value = gato.diagnosticos;
         document.getElementById('txtObsVet').value = gato.observacoesVet;
 
-        // Carrega inputs de CTI
         document.getElementById('ctiGaiola').value = gato.ctiGaiola;
         document.getElementById('ctiTemp').value = gato.ctiTemp;
         document.getElementById('ctiFr').value = gato.ctiFr;
         document.getElementById('ctiFc').value = gato.ctiFc;
         document.getElementById('ctiAlim').value = gato.ctiAlim;
 
-        // Oculta/Exibe a aba CTI no menu do prontuário baseado em onde o gato está alocado
         const btnSubCti = document.getElementById('btnSubCti');
         if (gato.destino === 'cti') {
             btnSubCti.style.display = "block";
@@ -340,14 +435,12 @@
             btnSubCti.style.display = "none";
         }
 
-        // Carrega inputs de Adoção
         document.getElementById('adoStatus').value = gato.adoStatus;
         document.getElementById('adoData').value = gato.adoData;
         document.getElementById('adoObs').value = gato.adoObs;
 
         atualizarListasInternasDoModal(gato);
         
-        // Força abrir a primeira sub-aba
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
     }
@@ -433,22 +526,18 @@
     }
 
     function atualizarListasInternasDoModal(gato) {
-        // Render exames
         document.getElementById('listaMedExames').innerHTML = gato.exames.map(e => `
             <div class="item-registro">📋 <strong>${e.nome}</strong> - Resultado: ${e.res} <small>⏱️ Gravado em: ${e.data}</small></div>
         `).join('');
 
-        // Render tratamentos
         document.getElementById('listaMedTratamentos').innerHTML = gato.tratamentos.map(t => `
             <div class="item-registro">💊 <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp} <small>⏱️ Prescrito em: ${t.data}</small></div>
         `).join('');
 
-        // Render vacinas
         document.getElementById('listaMedVacinas').innerHTML = gato.vacinas.map(v => `
             <div class="item-registro">💉 <strong>${v.nome}</strong> | Aplicada em: ${v.aplicar || 'N/A'} | Próxima Dose: <span style="color:blue">${v.prox || 'Não exige'}</span></div>
         `).join('');
 
-        // Render evolução CTI
         document.getElementById('listaMedEvolucao').innerHTML = gato.ctiEvolucao.map(ev => `
             <div class="item-registro" style="border-left: 3px solid #ef4444;">📈 ${ev.texto} <small>⏱️ Registro de Plantão: ${ev.data}</small></div>
         `).join('');
@@ -461,11 +550,11 @@
     }
 
     function salvarDados() {
-        localStorage.setItem('bancoGatosPremium_v1', JSON.stringify(gatos));
+        localStorage.setItem('bancoGatosPremium_v3', JSON.stringify(gatos));
         renderizarPaineis();
     }
 
-    // Inicialização automática
+    gerenciarCamposSetor();
     renderizarPaineis();
 </script>
 

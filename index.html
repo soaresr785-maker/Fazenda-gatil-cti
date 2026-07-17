@@ -41,7 +41,7 @@
         .sub-nav { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 8px; overflow-x: auto; }
         .sub-btn { flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #475569; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
         .sub-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .sub-aba { display: none; }
+        .sub-nav.sub-aba { display: none; }
         .sub-aba.active { display: block; }
         .grid-ficha { display: grid; grid-template-columns: 120px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .ficha-foto { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1; background: #cbd5e1; }
@@ -290,12 +290,15 @@
         const arquivoInput = document.getElementById('fotoArquivo').files[0];
         const destinoSelecionado = document.getElementById('destino').value;
         
-        // Define o setor padrão baseado na ala escolhida para não enviar nulo
-        let setorDefinido = 'N/A';
-        if (destinoSelecionado === 'gatil') {
-            setorDefinido = document.getElementById('setorGatil').value;
-        } else if (destinoSelecionado === 'cti') {
-            setorDefinido = 'CTI';
+        // TRATAMENTO IMPENETRÁVEL DE SETOR: Impede qualquer valor nulo de ser gerado
+        let setorDefinido = "Gatil Livre"; 
+        if (destinoSelecionado === 'cti') {
+            setorDefinido = "CTI";
+        } else {
+            const valorSelect = document.getElementById('setorGatil').value;
+            if (valorSelect && valorSelect.trim() !== "") {
+                setorDefinido = valorSelect;
+            }
         }
         
         const gNome = document.getElementById('nome').value;
@@ -341,15 +344,34 @@
     }
 
     async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_definido) {
-        // SOLUÇÃO: Enviando o valor tanto para a coluna "setor" quanto para "setor_gatil" para blindar o banco
+        // Objeto blindado contra falhas estruturais de colunas e constraints not-null
         const novoGato = {
-            nome, foto, especie: "Felina (Gato)", sexo, idade, peso, microchip, data_entrada, destino, 
-            setor: setor_definido,
-            setor_gatil: setor_definido,
-            historico_clinico: '', diagnosticos: '', observacoes_vet: '',
-            exames: [], tratamentos: [], vacinas: [],
-            cti_gaiola: '', cti_temp: '', cti_fr: '', cti_fc: '', cti_alim: '', cti_evolucao: [],
-            ado_status: 'Indisponível (Em Tratamento)', ado_data: '', ado_obs: ''
+            nome: nome,
+            foto: foto,
+            especie: "Felina (Gato)",
+            sexo: sexo,
+            idade: idade,
+            peso: peso,
+            microchip: microchip,
+            data_entrada: data_entrada,
+            destino: destino, 
+            setor: setor_definido,         // Alimenta a restrição rigorosa do banco
+            setor_gatil: setor_definido,   // Mantém compatibilidade com mapeamentos alternativos
+            historico_clinico: '', 
+            diagnosticos: '', 
+            observacoes_vet: '',
+            exames: [], 
+            tratamentos: [], 
+            vacinas: [],
+            cti_gaiola: '', 
+            cti_temp: '', 
+            cti_fr: '', 
+            cti_fc: '', 
+            cti_alim: '', 
+            cti_evolucao: [],
+            ado_status: 'Indisponível (Em Tratamento)', 
+            ado_data: '', 
+            ado_obs: ''
         };
 
         try {
@@ -394,8 +416,7 @@
             if (g.destino === 'cti' && divCti) {
                 divCti.innerHTML += cardHtml;
             } else if (g.destino === 'gatil') {
-                // Aceita tanto a nomenclatura antiga quanto a nova para renderização no painel
-                const nomeSetor = g.setor_gatil || g.setor || 'Gatil Livre';
+                const nomeSetor = g.setor || g.setor_gatil || 'Gatil Livre';
                 if (nomeSetor !== 'N/A' && nomeSetor !== 'CTI') {
                     const idSetorTratado = nomeSetor.replace(/\s+/g, '');
                     const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
@@ -418,7 +439,7 @@
         document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
-        const exibeSetor = gato.setor_gatil || gato.setor || 'Gatil Livre';
+        const exibeSetor = gato.setor || gato.setor_gatil || 'Gatil Livre';
         const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
 
         document.getElementById('medicoDadosGerais').innerHTML = `
@@ -490,7 +511,7 @@
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
-            alert('Parâmetros vitais de CTI atualizados na nuvem!');
+            alert('Parâmetros vitais de CTI updated na nuvem!');
             await carregarDadosDoBanco();
         } catch(err) { alert("Erro ao salvar: " + err.message); }
     }

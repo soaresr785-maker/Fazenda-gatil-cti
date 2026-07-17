@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f1f5f9; padding: 20px; color: #1e293b; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { background-color: #f1f5f9; padding: 20px; color: #1e293b; display: flex; flex-direction: column; min-height: 100vh; }
+        .container { max-width: 1100px; margin: auto; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); flex: 1; }
         h1 { margin-bottom: 20px; font-size: 24px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
         .nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
         .nav-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: 600; color: #64748b; transition: all 0.2s; }
@@ -58,6 +58,9 @@
         .item-registro small { color: #94a3b8; display: block; margin-top: 4px; }
         .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-pdf-link:hover { background: #1d4ed8; }
+        
+        /* Rodapé de Créditos */
+        footer { text-align: center; padding: 20px 0 10px 0; font-size: 13px; color: #94a3b8; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -271,6 +274,11 @@
     </div>
 </div>
 
+<!-- RODAPÉ DE CRÉDITOS -->
+<footer>
+    🐾 Desenvolvido por Rennan
+</footer>
+
 <script>
     const SUPABASE_URL = "https://eekbrwngdoiorplijizz.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVla2Jyd25nZG9pb3JwbGlqaXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2NTMsImV4cCI6MjA5OTczMjY1M30.mc4BAE3RV4OxqRV_gVc8D8qsbQHgonRSMLv4jCy7pmI";
@@ -454,7 +462,7 @@
                     if (error) throw error;
                     
                     document.getElementById('medicoFoto').src = dataUrlOtimizada;
-                    alert("Foto updated com sucesso na nuvem!");
+                    alert("Foto atualizada com sucesso na nuvem!");
                     await carregarDadosDoBanco();
                 } catch (err) {
                     alert("Erro ao salvar nova foto: " + err.message);
@@ -561,7 +569,6 @@
         document.getElementById('ctiFc').value = gato.cti_fc || '';
         document.getElementById('ctiAlim').value = gato.cti_alim || '';
 
-        // CONDIÇÃO EXCLUSIVA: O monitoramento de parâmetros críticos só é visível se o animal estiver de fato no CTI e não for óbito
         document.getElementById('btnSubCti').style.display = (gato.destino === 'cti' && gato.ado_status !== 'Óbito') ? "block" : "none";
 
         document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
@@ -709,7 +716,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function executarUpdateSubItem(dados) {
+    async function ejecutarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;

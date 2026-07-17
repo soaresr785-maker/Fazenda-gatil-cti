@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema Clínico Veterinário - Gestão Felina</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f1f5f9; padding: 20px; color: #1e293b; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        h1 { margin-bottom: 20px; font-size: 24px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+        
+        /* Menu Superior */
+        .nav { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+        .nav-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: 600; color: #64748b; transition: all 0.2s; }
+        .nav-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        
+        /* Abas Principais */
+        .aba-principal { display: none; }
+        .aba-principal.active { display: block; }
+        
+        /* Formulário de Cadastro */
+        .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 13px; font-weight: 600; color: #475569; }
+        input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; }
+        .btn-salvar { padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 200px; }
+        
+        /* Grid de Gatos */
+        .lista-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; gap: 12px; align-items: center; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .card-cti { border-left-color: #ef4444; }
+        .card-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 1px solid #cbd5e1; }
+        .card-info h3 { color: #0f172a; font-size: 16px; margin-bottom: 2px; }
+        .card-info p { font-size: 13px; color: #64748b; }
+
+        /* MODAL DO PRONTUÁRIO INDIVIDUAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; width: 95%; max-width: 850px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+        .modal-header { padding: 15px 20px; background: #0f172a; color: white; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        
+        /* Sub-abas dentro do prontuário */
+        .sub-nav { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 8px; overflow-x: auto; }
+        .sub-btn { flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #475569; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        .sub-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .sub-aba { display: none; }
+        .sub-aba.active { display: block; }
+
+        /* Blocos Médicos Estruturados */
+        .grid-ficha { display: grid; grid-template-columns: 120px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .ficha-foto { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1; background: #cbd5e1; }
+        .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; }
+        
+        .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .box-clinico h4 { margin-bottom: 10px; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; font-size: 15px; }
+        
+        .mini-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; align-items: flex-end; }
+        .mini-form button { padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .item-registro small { color: #94a3b8; display: block; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🐱 Fichas Médicas Felinas</h1>
+    
+    <div class="nav">
+        <button class="nav-btn active" onclick="mudarAba('cadastro', this)">➕ Adicionar Gato</button>
+        <button class="nav-btn" onclick="mudarAba('gatil', this)">🏠 Gatil</button>
+        <button class="nav-btn" onclick="mudarAba('cti', this)">🏥 CTI</button>
+    </div>
+
+    <!-- ABA PRINCIPAL: CADASTRO -->
+    <div id="cadastro" class="aba-principal active">
+        <h2>Identificação Inicial</h2>
+        <form id="formGato" onsubmit="adicionarGato(event)" style="margin-top: 15px;">
+            <div class="form-group">
+                <div class="field"><label>Nome</label><input type="text" id="nome" required placeholder="Ex: Mingau"></div>
+                <div class="field"><label>Link da Foto (URL)</label><input type="text" id="foto" placeholder="URL da foto ou deixe em branco"></div>
+                <div class="field"><label>Espécie</label><input type="text" id="especie" value="Felina (Gato)" readonly></div>
+                <div class="field"><label>Sexo</label><select id="sexo"><option value="Macho">Macho</option><option value="Fêmea">Fêmea</option></select></div>
+                <div class="field"><label>Idade</label><input type="text" id="idade" placeholder="Ex: 3 anos"></div>
+                <div class="field"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" required placeholder="Ex: 4.2"></div>
+                <div class="field"><label>Microchip</label><input type="text" id="microchip" placeholder="Código do chip"></div>
+                <div class="field"><label>Data de Entrada</label><input type="date" id="dataEntrada" required></div>
+                <div class="field"><label>Ala Inicial</label><select id="destino"><option value="gatil">Gatil</option><option value="cti">CTI</option></select></div>
+            </div>
+            <button type="submit" class="btn-salvar">Criar Prontuário</button>
+        </form>
+    </div>
+
+    <!-- ABA PRINCIPAL: GATIL -->
+    <div id="gatil" class="aba-principal">
+        <h2>Pacientes no Gatil</h2>
+        <div id="listaGatil" class="lista-cards" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- ABA PRINCIPAL: CTI -->
+    <div id="cti" class="aba-principal">
+        <h2>Pacientes Críticos (CTI)</h2>
+        <div id="listaCti" class="lista-cards" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<!-- MODAL INDIVIDUAL (ÁREA INTEGRAL DO GATO) -->
+<div id="modalProntuario" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalNomeGato">🐾 Ficha Clínica</h2>
+            <button class="close-btn" onclick="fecharModal()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Sub-Navegação de Prontuários Médicos -->
+            <div class="sub-nav">
+                <button class="sub-btn active" onclick="mudarSubAba('sub-identificacao', this)">📋 Identificação</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-prontuario', this)">🩺 Prontuário Clínico</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-tratamento', this)">💊 Tratamentos</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-vacinas', this)">💉 Vacinação</button>
+                <button class="sub-btn" id="btnSubCti" onclick="mudarSubAba('sub-cti-dados', this)">🚑 Parâmetros CTI</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-adocao', this)">🏡 Status Adoção</button>
+            </div>
+
+            <!-- SUB-ABA 1: IDENTIFICAÇÃO -->
+            <div id="sub-identificacao" class="sub-aba active">
+                <div class="grid-ficha">
+                    <img id="medicoFoto" class="ficha-foto" src="" alt="Foto do paciente">
+                    <div class="ficha-dados" id="medicoDadosGerais"></div>
+                </div>
+            </div>
+
+            <!-- SUB-ABA 2: 🩺 PRONTUÁRIO -->
+            <div id="sub-prontuario" class="sub-aba">
+                <div class="box-clinico">
+                    <h4>Histórico Clínico & Diagnósticos</h4>
+                    <div class="form-group" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="field"><label>Histórico Clínico</label><textarea id="txtHistorico" rows="2"></textarea></div>
+                        <div class="field"><label>Diagnósticos</label><textarea id="txtDiagnostico" rows="2"></textarea></div>
+                    </div>
+                    <div class="field"><label>Observações Veterinárias Gerais</label><textarea id="txtObsVet" rows="2"></textarea></div>
+                    <button class="btn-salvar" style="padding:8px; width:auto; margin-top:10px;" onclick="atualizarCamposTexto()">Salvar Texto Clínico</button>
+                </div>
+                <div class="box-clinico">
+                    <h4>🔬 Exames Realizados</h4>
+                    <div class="mini-form">
+                        <div class="field"><label>Exame</label><input type="text" id="exameNome" placeholder="Ex: Hemograma"></div>
+                        <div class="field"><label>Resultado/Laudo</label><input type="text" id="exameResultado" placeholder="Resultados"></div>
+                        <button onclick="adicionarSubItem('exames')">Anexar</button>
+                    </div>
+                    <div id="listaMedExames"></div>
+                </div>
+            </div>
+
+            <!-- SUB-ABA 3: 💊 TRATAMENTO -->
+            <div id="sub-tratamento" class="sub-aba">
+                <h3>Prescrição e Manejo de Fármacos</h3>
+                <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr 2fr auto;">
+                    <div class="field"><label>Medicamento</label><input type="text" id="tratoMed"></div>
+                    <div class="field"><label>Dose</label><input type="text" id="tratoDose" placeholder="Ex: 2mg"></div>
+                    <div class="field"><label>Horário</label><input type="text" id="tratoHorario" placeholder="Ex: 8h/8h"></div>
+                    <div class="field"><label>Responsável</label><input type="text" id="tratoResp" placeholder="Nome do Vet/Aux"></div>
+                    <button onclick="adicionarSubItem('tratamentos')">Prescrever</button>
+                </div>
+                <div id="listaMedTratamentos"></div>
+            </div>
+
+            <!-- SUB-ABA 4: 💉 VACINAÇÃO -->
+            <div id="sub-vacinas" class="sub-aba">
+                <h3>Histórico de Imunização</h3>
+                <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr auto;">
+                    <div class="field"><label>Vacina Aplicada</label><input type="text" id="vacNome" placeholder="Ex: Quádrupla (V4)"></div>
+                    <div class="field"><label>Data da Aplicação</label><input type="date" id="vacData"></div>
+                    <div class="field"><label>Próxima Dose / Reforço</label><input type="date" id="vacProxima"></div>
+                    <button onclick="adicionarSubItem('vacinas')">Registrar</button>
+                </div>
+                <div id="listaMedVacinas"></div>
+            </div>
+
+            <!-- SUB-ABA 5: 🚑 CTI -->
+            <div id="sub-cti-dados" class="sub-aba">
+                <h3 style="color:#ef4444; margin-bottom:10px;">Monitoramento de Paciente Crítico</h3>
+                <div class="box-clinico" style="background:#fff5f5; border-color:#fca5a5;">
+                    <div class="form-group" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
+                        <div class="field"><label>Gaiola N°</label><input type="text" id="ctiGaiola"></div>
+                        <div class="field"><label>Temperatura (°C)</label><input type="text" id="ctiTemp"></div>
+                        <div class="field"><label>Freq. Resp. (mpm)</label><input type="text" id="ctiFr"></div>
+                        <div class="field"><label>Freq. Card. (bpm)</label><input type="text" id="ctiFc"></div>
+                        <div class="field"><label>Alimentação</label><input type="text" id="ctiAlim" placeholder="Ex: Sonda / Sachê"></div>
+                    </div>
+                    <button class="btn-salvar" style="background:#ef4444; padding:8px; width:auto;" onclick="salvarParametrosCti()">Atualizar Parâmetros Críticos</button>
+                </div>
+                <div class="box-clinico">
+                    <h4>📋 Evolução Diária / Plantão</h4>
+                    <div class="mini-form" style="grid-template-columns: 1fr auto;">
+                        <div class="field"><label>Anotação de Evolução</label><input type="text" id="ctiEvolucaoTexto" placeholder="Ex: Apresentou melhora no padrão respiratório, ativo."></div>
+                        <button style="background:#ef4444;" onclick="adicionarSubItem('evolucao')">Inserir</button>
+                    </div>
+                    <div id="listaMedEvolucao"></div>
+                </div>
+            </div>
+
+            <!-- SUB-ABA 6: 🏡 ADOÇÃO -->
+            <div id="sub-adocao" class="sub-aba">
+                <h3>Gerenciamento de Destino do Animal</h3>
+                <div class="box-clinico">
+                    <div class="form-group" style="grid-template-columns: 1fr 1fr;">
+                        <div class="field">
+                            <label>Status de Adoção</label>
+                            <select id="adoStatus">
+                                <option value="Indisponível (Em Tratamento)">Indisponível (Em Tratamento)</option>
+                                <option value="Disponível para Adoção">Disponível para Adoção</option>
+                                <option value="Adotado">Adotado</option>
+                            </select>
+                        </div>
+                        <div class="field"><label>Data da Adoção (se adotado)</label><input type="date" id="adoData"></div>
+                    </div>
+                    <div class="field"><label>Observações Adicionais da Adoção</label><textarea id="adoObs" rows="3"></textarea></div>
+                    <button class="btn-salvar" style="background:#8b5cf6;" onclick="salvarStatusAdocao()">Atualizar Status de Adoção</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let gatos = JSON.parse(localStorage.getItem('bancoGatosPremium_v1')) || [];
+    let idGatoSelecionado = null;
+
+    // Seta data de hoje automática no campo de entrada
+    document.getElementById('dataEntrada').valueToDate = new Date();
+    document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
+
+    function mudarAba(id, btn) {
+        document.querySelectorAll('.aba-principal').forEach(a => a.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        renderizarPaineis();
+    }
+
+    function adicionarGato(e) {
+        e.preventDefault();
+        
+        // Se não colocar link de foto, joga uma imagem de gatinho padrão
+        const urlFotoDef = document.getElementById('foto').value || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150';
+
+        const novoGato = {
+            id: Date.now(),
+            nome: document.getElementById('nome').value,
+            foto: urlFotoDef,
+            especie: "Felina (Gato)",
+            sexo: document.getElementById('sexo').value,
+            idade: document.getElementById('idade').value || 'Não informada',
+            peso: document.getElementById('peso').value + ' kg',
+            microchip: document.getElementById('microchip').value || 'Não possui',
+            dataEntrada: converterData(document.getElementById('dataEntrada').value),
+            destino: document.getElementById('destino').value,
+            
+            // Ficha Clínica Básica
+            historicoClinico: '', diagnosticos: '', observacoesVet: '',
+            exames: [], tratamentos: [], vacinas: [],
+            
+            // CTI
+            ctiGaiola: '', ctiTemp: '', ctiFr: '', ctiFc: '', ctiAlim: '', ctiEvolucao: [],
+            
+            // Adoção
+            adoStatus: 'Indisponível (Em Tratamento)', adoData: '', adoObs: ''
+        };
+
+        gatos.push(novoGato);
+        salvarDados();
+        document.getElementById('formGato').reset();
+        document.getElementById('dataEntrada').value = new Date().toISOString().substring(0, 10);
+        mudarAba(novoGato.destino, document.querySelectorAll('.nav-btn')[novoGato.destino === 'gatil' ? 1 : 2]);
+    }
+
+    function renderizarPaineis() {
+        const divGatil = document.getElementById('listaGatil');
+        const divCti = document.getElementById('listaCti');
+        divGatil.innerHTML = '';
+        divCti.innerHTML = '';
+
+        gatos.forEach(g => {
+            const cardHtml = `
+                <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
+                    <img class="card-img" src="${g.foto}">
+                    <div class="card-info">
+                        <h3>🐾 ${g.nome}</h3>
+                        <p>Peso: ${g.peso} | Sexo: ${g.sexo}</p>
+                        <p style="color:#3b82f6; font-weight:bold; font-size:11px; margin-top:4px;">📋 ABRIR PRONTUÁRIO</p>
+                    </div>
+                </div>`;
+            
+            if (g.destino === 'gatil') divGatil.innerHTML += cardHtml;
+            else divCti.innerHTML += cardHtml;
+        });
+    }
+
+    function abrirProntuario(id) {
+        idGatoSelecionado = id;
+        const gato = gatos.find(g => g.id === id);
+        
+        document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
+        document.getElementById('medicoFoto').src = gato.foto;
+        
+        // Renderiza Dados da aba Identificação
+        document.getElementById('medicoDadosGerais').innerHTML = `
+            <p><strong>Nome:</strong> ${gato.nome}</p>
+            <p><strong>Espécie:</strong> ${gato.especie}</p>
+            <p><strong>Sexo:</strong> ${gato.sexo}</p>
+            <p><strong>Idade:</strong> ${gato.idade}</p>
+            <p><strong>Peso:</strong> ${gato.peso}</p>
+            <p><strong>Microchip:</strong> ${gato.microchip}</p>
+            <p><strong>Data de Entrada:</strong> ${gato.dataEntrada}</p>
+            <p><strong>Setor Atual:</strong> <span style="text-transform:uppercase; font-weight:bold; color:${gato.destino==='cti'?'red':'green'}">${gato.destino}</span></p>
+        `;
+
+        // Carrega inputs de texto das fichas
+        document.getElementById('txtHistorico').value = gato.historicoClinico;
+        document.getElementById('txtDiagnostico').value = gato.diagnosticos;
+        document.getElementById('txtObsVet').value = gato.observacoesVet;
+
+        // Carrega inputs de CTI
+        document.getElementById('ctiGaiola').value = gato.ctiGaiola;
+        document.getElementById('ctiTemp').value = gato.ctiTemp;
+        document.getElementById('ctiFr').value = gato.ctiFr;
+        document.getElementById('ctiFc').value = gato.ctiFc;
+        document.getElementById('ctiAlim').value = gato.ctiAlim;
+
+        // Oculta/Exibe a aba CTI no menu do prontuário baseado em onde o gato está alocado
+        const btnSubCti = document.getElementById('btnSubCti');
+        if (gato.destino === 'cti') {
+            btnSubCti.style.display = "block";
+        } else {
+            btnSubCti.style.display = "none";
+        }
+
+        // Carrega inputs de Adoção
+        document.getElementById('adoStatus').value = gato.adoStatus;
+        document.getElementById('adoData').value = gato.adoData;
+        document.getElementById('adoObs').value = gato.adoObs;
+
+        atualizarListasInternasDoModal(gato);
+        
+        // Força abrir a primeira sub-aba
+        mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
+        document.getElementById('modalProntuario').style.display = 'flex';
+    }
+
+    function fecharModal() {
+        document.getElementById('modalProntuario').style.display = 'none';
+        idGatoSelecionado = null;
+    }
+
+    function mudarSubAba(subId, btn) {
+        document.querySelectorAll('.sub-aba').forEach(sa => sa.classList.remove('active'));
+        document.querySelectorAll('.sub-btn').forEach(sb => sb.classList.remove('active'));
+        document.getElementById(subId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function atualizarCamposTexto() {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        gato.historicoClinico = document.getElementById('txtHistorico').value;
+        gato.diagnosticos = document.getElementById('txtDiagnostico').value;
+        gato.observacoesVet = document.getElementById('txtObsVet').value;
+        salvarDados();
+        alert('Textos clínicos gravados!');
+    }
+
+    function salvarParametrosCti() {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        gato.ctiGaiola = document.getElementById('ctiGaiola').value;
+        gato.ctiTemp = document.getElementById('ctiTemp').value;
+        gato.ctiFr = document.getElementById('ctiFr').value;
+        gato.ctiFc = document.getElementById('ctiFc').value;
+        gato.ctiAlim = document.getElementById('ctiAlim').value;
+        salvarDados();
+        alert('Parâmetros vitais de CTI atualizados!');
+    }
+
+    function salvarStatusAdocao() {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        gato.adoStatus = document.getElementById('adoStatus').value;
+        gato.adoData = document.getElementById('adoData').value;
+        gato.adoObs = document.getElementById('adoObs').value;
+        salvarDados();
+        alert('Dados cadastrais de adoção salvos com sucesso!');
+    }
+
+    function adicionarSubItem(tipo) {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        const dataAgora = new Date().toLocaleString('pt-BR');
+
+        if (tipo === 'exames') {
+            const nome = document.getElementById('exameNome').value;
+            const res = document.getElementById('exameResultado').value;
+            if(!nome) return;
+            gato.exames.unshift({ nome, res, data: dataAgora });
+            document.getElementById('exameNome').value = ''; document.getElementById('exameResultado').value = '';
+        } 
+        else if (tipo === 'tratamentos') {
+            const med = document.getElementById('tratoMed').value;
+            const dose = document.getElementById('tratoDose').value;
+            const hora = document.getElementById('tratoHorario').value;
+            const resp = document.getElementById('tratoResp').value;
+            if(!med) return;
+            gato.tratamentos.unshift({ med, dose, hora, resp, data: dataAgora });
+            document.getElementById('tratoMed').value = ''; document.getElementById('tratoDose').value = ''; document.getElementById('tratoHorario').value = ''; document.getElementById('tratoResp').value = '';
+        }
+        else if (tipo === 'vacinas') {
+            const nome = document.getElementById('vacNome').value;
+            const aplicar = document.getElementById('vacData').value;
+            const prox = document.getElementById('vacProxima').value;
+            if(!nome) return;
+            gato.vacinas.unshift({ nome, aplicar: converterData(aplicar), prox: converterData(prox) });
+            document.getElementById('vacNome').value = ''; document.getElementById('vacData').value = ''; document.getElementById('vacProxima').value = '';
+        }
+        else if (tipo === 'evolucao') {
+            const texto = document.getElementById('ctiEvolucaoTexto').value;
+            if(!texto) return;
+            gato.ctiEvolucao.unshift({ texto, data: dataAgora });
+            document.getElementById('ctiEvolucaoTexto').value = '';
+        }
+
+        salvarDados();
+        atualizarListasInternasDoModal(gato);
+    }
+
+    function atualizarListasInternasDoModal(gato) {
+        // Render exames
+        document.getElementById('listaMedExames').innerHTML = gato.exames.map(e => `
+            <div class="item-registro">📋 <strong>${e.nome}</strong> - Resultado: ${e.res} <small>⏱️ Gravado em: ${e.data}</small></div>
+        `).join('');
+
+        // Render tratamentos
+        document.getElementById('listaMedTratamentos').innerHTML = gato.tratamentos.map(t => `
+            <div class="item-registro">💊 <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp} <small>⏱️ Prescrito em: ${t.data}</small></div>
+        `).join('');
+
+        // Render vacinas
+        document.getElementById('listaMedVacinas').innerHTML = gato.vacinas.map(v => `
+            <div class="item-registro">💉 <strong>${v.nome}</strong> | Aplicada em: ${v.aplicar || 'N/A'} | Próxima Dose: <span style="color:blue">${v.prox || 'Não exige'}</span></div>
+        `).join('');
+
+        // Render evolução CTI
+        document.getElementById('listaMedEvolucao').innerHTML = gato.ctiEvolucao.map(ev => `
+            <div class="item-registro" style="border-left: 3px solid #ef4444;">📈 ${ev.texto} <small>⏱️ Registro de Plantão: ${ev.data}</small></div>
+        `).join('');
+    }
+
+    function converterData(dataString) {
+        if(!dataString) return '';
+        const partes = dataString.split('-');
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    function salvarDados() {
+        localStorage.setItem('bancoGatosPremium_v1', JSON.stringify(gatos));
+        renderizarPaineis();
+    }
+
+    // Inicialização automática
+    renderizarPaineis();
+</script>
+
+</body>
+</html>

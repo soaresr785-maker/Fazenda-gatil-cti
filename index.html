@@ -297,8 +297,14 @@
         const gSexo = document.getElementById('sexo').value;
         const gIdade = document.getElementById('idade').value || 'Não informada';
         
-        // CORREÇÃO: Envia apenas o valor numérico puro para o Supabase aceitar como numeric
-        const gPeso = document.getElementById('peso').value; 
+        // SEGURANÇA MÁXIMA: Força a conversão para número decimal limpo (remove qualquer texto residual)
+        const valorRaw = document.getElementById('peso').value;
+        const gPeso = parseFloat(valorRaw); 
+        
+        if (isNaN(gPeso)) {
+            alert("Por favor, insira um número válido para o peso.");
+            return;
+        }
         
         const gMicrochip = document.getElementById('microchip').value || 'Não possui';
         const gDataEntrada = document.getElementById('dataEntrada').value; 
@@ -403,7 +409,6 @@
         
         const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${gato.setor_gatil}`;
 
-        // CORREÇÃO: Adicionado o "kg" na renderização visual do prontuário
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
             <p><strong>Espécie:</strong> ${gato.especie}</p>

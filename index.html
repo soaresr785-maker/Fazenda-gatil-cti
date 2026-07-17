@@ -30,6 +30,7 @@
         .card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; gap: 12px; align-items: center; }
         .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .card-cti { border-left-color: #ef4444; }
+        .card-obito { border-left-color: #64748b; background: #f1f5f9; opacity: 0.8; }
         .card-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 1px solid #cbd5e1; }
         .card-info h3 { color: #0f172a; font-size: 16px; margin-bottom: 2px; }
         .card-info p { font-size: 13px; color: #64748b; }
@@ -43,15 +44,20 @@
         .sub-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .sub-nav.sub-aba { display: none; }
         .sub-aba.active { display: block; }
-        .grid-ficha { display: grid; grid-template-columns: 120px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .grid-ficha { display: grid; grid-template-columns: 140px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .container-foto-ficha { display: flex; flex-direction: column; gap: 8px; align-items: center; }
         .ficha-foto { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1; background: #cbd5e1; }
+        .btn-alterar-foto { width: 120px; padding: 6px; background: #475569; color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
         .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; }
         .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .box-clinico h4 { margin-bottom: 10px; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; font-size: 15px; }
         .mini-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; align-items: flex-end; }
         .mini-form button { padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; }
+        .item-registro-content { flex: 1; }
         .item-registro small { color: #94a3b8; display: block; margin-top: 4px; }
+        .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-pdf-link:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -63,6 +69,7 @@
         <button class="nav-btn active" onclick="mudarAba('cadastro', this)">➕ Adicionar Gato</button>
         <button class="nav-btn" onclick="mudarAba('gatil', this)">🏠 Gatil</button>
         <button class="nav-btn" onclick="mudarAba('cti', this)">🏥 CTI</button>
+        <button class="nav-btn" onclick="mudarAba('historico-obitos', this)">🖤 Histórico/Óbitos</button>
     </div>
 
     <div class="busca-container" id="containerBusca" style="display: none;">
@@ -123,6 +130,13 @@
         <h2>Pacientes Críticos (CTI)</h2>
         <div id="listaCti" class="lista-cards" style="margin-top: 15px;"></div>
     </div>
+
+    <!-- HISTÓRICO / ÓBITOS -->
+    <div id="historico-obitos" class="aba-principal">
+        <h2>Registro e Memorial de Óbitos</h2>
+        <p style="color:#64748b; margin-bottom:15px; font-size:14px; font-style:italic;">Espaço destinado à memória e registros legais dos pacientes que nos deixaram.</p>
+        <div id="listaObitos" class="lista-cards"></div>
+    </div>
 </div>
 
 <!-- MODAL INDIVIDUAL -->
@@ -140,13 +154,17 @@
                 <button class="sub-btn" onclick="mudarSubAba('sub-tratamento', this)">💊 Tratamentos</button>
                 <button class="sub-btn" onclick="mudarSubAba('sub-vacinas', this)">💉 Vacinação</button>
                 <button class="sub-btn" id="btnSubCti" onclick="mudarSubAba('sub-cti-dados', this)">🚑 Parâmetros CTI</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-adocao', this)">🏡 Status Adoção</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-adocao', this)">🏡 Destino / Desfecho</button>
             </div>
 
             <!-- SUB-ABA 1: IDENTIFICAÇÃO -->
             <div id="sub-identificacao" class="sub-aba active">
                 <div class="grid-ficha">
-                    <img id="medicoFoto" class="ficha-foto" src="" alt="Foto do paciente">
+                    <div class="container-foto-ficha">
+                        <img id="medicoFoto" class="ficha-foto" src="" alt="Foto do paciente">
+                        <input type="file" id="alterarFotoInput" accept="image/*" style="display:none;" onchange="processarAlteracaoFoto(this)">
+                        <button class="btn-alterar-foto" onclick="document.getElementById('alterarFotoInput').click()">📸 Alterar Foto</button>
+                    </div>
                     <div class="ficha-dados" id="medicoDadosGerais"></div>
                 </div>
             </div>
@@ -164,9 +182,10 @@
                 </div>
                 <div class="box-clinico">
                     <h4>🔬 Exames Realizados</h4>
-                    <div class="mini-form">
+                    <div class="mini-form" style="grid-template-columns: 1fr 1fr 1fr auto;">
                         <div class="field"><label>Exame</label><input type="text" id="exameNome" placeholder="Ex: Hemograma"></div>
                         <div class="field"><label>Resultado/Laudo</label><input type="text" id="exameResultado" placeholder="Resultados"></div>
+                        <div class="field"><label>Anexo (PDF)</label><input type="file" id="examePdf" accept="application/pdf"></div>
                         <button onclick="adicionarSubItem('exames')">Anexar</button>
                     </div>
                     <div id="listaMedExames"></div>
@@ -221,23 +240,31 @@
                 </div>
             </div>
 
-            <!-- SUB-ABA 6: ADOÇÃO -->
+            <!-- SUB-ABA 6: ADOÇÃO / DESFECHO / ÓBITO -->
             <div id="sub-adocao" class="sub-aba">
                 <h3>Gerenciamento de Destino do Animal</h3>
                 <div class="box-clinico">
                     <div class="form-group" style="grid-template-columns: 1fr 1fr;">
                         <div class="field">
-                            <label>Status de Adoção</label>
-                            <select id="adoStatus">
+                            <label>Status do Paciente</label>
+                            <select id="adoStatus" onchange="alternarCamposDesfecho()">
                                 <option value="Indisponível (Em Tratamento)">Indisponível (Em Tratamento)</option>
                                 <option value="Disponível para Adoção">Disponível para Adoção</option>
                                 <option value="Adotado">Adotado</option>
+                                <option value="Óbito">🖤 Óbito</option>
                             </select>
                         </div>
-                        <div class="field"><label>Data da Adoção (se adotado)</label><input type="date" id="adoData"></div>
+                        <div class="field" id="containerDataAdocao"><label>Data da Adoção (se adotado)</label><input type="date" id="adoData"></div>
+                        <div class="field" id="containerDataObito" style="display:none;"><label>Data/Hora do Óbito</label><input type="datetime-local" id="obitoDataHora"></div>
                     </div>
-                    <div class="field"><label>Observações Adicionais da Adoção</label><textarea id="adoObs" rows="3"></textarea></div>
-                    <button class="btn-salvar" style="background:#8b5cf6;" onclick="salvarStatusAdocao()">Atualizar Status de Adoção</button>
+                    
+                    <div class="field" id="containerCausaObito" style="display:none; margin-bottom: 15px;">
+                        <label>Causa do Óbito / Suspeita Clínica</label>
+                        <input type="text" id="obitoCausa" placeholder="Ex: Parada Cardiorrespiratória secundária à PIF">
+                    </div>
+
+                    <div class="field"><label>Observações Adicionais do Desfecho / Histórico</label><textarea id="adoObs" rows="3"></textarea></div>
+                    <button class="btn-salvar" style="background:#8b5cf6;" onclick="salvarStatusAdocao()">Atualizar Status de Adoção / Óbito</button>
                 </div>
             </div>
         </div>
@@ -273,6 +300,23 @@
         campoSetor.style.display = (destino === 'gatil') ? 'flex' : 'none';
     }
 
+    function alternarCamposDesfecho() {
+        const status = document.getElementById('adoStatus').value;
+        const cAdocao = document.getElementById('containerDataAdocao');
+        const cObitoData = document.getElementById('containerDataObito');
+        const cObitoCausa = document.getElementById('containerCausaObito');
+
+        if (status === 'Óbito') {
+            cAdocao.style.display = 'none';
+            cObitoData.style.display = 'flex';
+            cObitoCausa.style.display = 'flex';
+        } else {
+            cAdocao.style.display = 'flex';
+            cObitoData.style.display = 'none';
+            cObitoCausa.style.display = 'none';
+        }
+    }
+
     function mudarAba(id, btn) {
         document.querySelectorAll('.aba-principal').forEach(a => a.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -280,7 +324,7 @@
         btn.classList.add('active');
         
         const containerBusca = document.getElementById('containerBusca');
-        containerBusca.style.display = (id === 'gatil' || id === 'cti') ? 'block' : 'none';
+        containerBusca.style.display = (id === 'gatil' || id === 'cti' || id === 'historico-obitos') ? 'block' : 'none';
         renderizarPaineis();
     }
 
@@ -290,7 +334,6 @@
         const arquivoInput = document.getElementById('fotoArquivo').files[0];
         const destinoSelecionado = document.getElementById('destino').value;
         
-        // TRATAMENTO IMPENETRÁVEL DE SETOR: Impede qualquer valor nulo de ser gerado
         let setorDefinido = "Gatil Livre"; 
         if (destinoSelecionado === 'cti') {
             setorDefinido = "CTI";
@@ -304,9 +347,7 @@
         const gNome = document.getElementById('nome').value;
         const gSexo = document.getElementById('sexo').value;
         const gIdade = document.getElementById('idade').value || 'Não informada';
-        
-        const valorRaw = document.getElementById('peso').value;
-        const gPeso = parseFloat(valorRaw); 
+        const gPeso = parseFloat(document.getElementById('peso').value); 
         
         if (isNaN(gPeso)) {
             alert("Por favor, insira um número válido para o peso.");
@@ -344,7 +385,6 @@
     }
 
     async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_definido) {
-        // Objeto blindado contra falhas estruturais de colunas e constraints not-null
         const novoGato = {
             nome: nome,
             foto: foto,
@@ -355,8 +395,8 @@
             microchip: microchip,
             data_entrada: data_entrada,
             destino: destino, 
-            setor: setor_definido,         // Alimenta a restrição rigorosa do banco
-            setor_gatil: setor_definido,   // Mantém compatibilidade com mapeamentos alternativos
+            setor: setor_definido,         
+            setor_gatil: setor_definido,   
             historico_clinico: '', 
             diagnosticos: '', 
             observacoes_vet: '',
@@ -388,12 +428,51 @@
         }
     }
 
+    function processarAlteracaoFoto(input) {
+        const arquivo = input.files[0];
+        if (!arquivo) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = async function() {
+                const canvas = document.createElement('canvas');
+                const max_size = 300;
+                let width = img.width, height = img.height;
+                if (width > height) {
+                    if (width > max_size) { height *= max_size / width; width = max_size; }
+                } else {
+                    if (height > max_size) { width *= max_size / height; height = max_size; }
+                }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                const dataUrlOtimizada = canvas.toDataURL('image/jpeg', 0.7);
+
+                try {
+                    const { error } = await _supabase.from('gatos').update({ foto: dataUrlOtimizada }).eq('id', idGatoSelecionado);
+                    if (error) throw error;
+                    
+                    document.getElementById('medicoFoto').src = dataUrlOtimizada;
+                    alert("Foto updated com sucesso na nuvem!");
+                    await carregarDadosDoBanco();
+                } catch (err) {
+                    alert("Erro ao salvar nova foto: " + err.message);
+                }
+            }
+        }
+        reader.readAsDataURL(arquivo);
+    }
+
     function renderizarPaineis() {
         const setoresIds = ['GatilLivre', 'Especial1', 'Especial2', 'Especial3', 'FIV', 'FELV'];
         setoresIds.forEach(id => { const el = document.getElementById(`setor-${id}`); if(el) el.innerHTML = ''; });
         
         const divCti = document.getElementById('listaCti');
         if(divCti) divCti.innerHTML = '';
+
+        const divObitos = document.getElementById('listaObitos');
+        if(divObitos) divObitos.innerHTML = '';
 
         const termoBusca = document.getElementById('inputBusca').value.toLowerCase().trim();
 
@@ -402,6 +481,23 @@
             const bateMicrochip = (g.microchip || '').toLowerCase().includes(termoBusca);
 
             if (termoBusca !== '' && !bateNome && !bateMicrochip) return;
+
+            const isObito = g.ado_status === 'Óbito';
+
+            if (isObito) {
+                if (divObitos) {
+                    divObitos.innerHTML += `
+                        <div class="card card-obito" onclick="abrirProntuario(${g.id})">
+                            <img class="card-img" src="${g.foto}">
+                            <div class="card-info">
+                                <h3>🖤 ${g.nome} (Óbito)</h3>
+                                <p>Causa: ${g.obito_causa || g.ado_obs || 'Não descrita'}</p>
+                                <p style="font-size:11px; margin-top:2px;">Entrada: ${converterData(g.data_entrada)}</p>
+                            </div>
+                        </div>`;
+                }
+                return; 
+            }
 
             const cardHtml = `
                 <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
@@ -430,6 +526,7 @@
             if(el && el.innerHTML === '') el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho encontrado.</p>';
         });
         if(divCti && divCti.innerHTML === '') divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho no CTI.</p>';
+        if(divObitos && divObitos.innerHTML === '') divObitos.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum registro de óbito.</p>';
     }
 
     function abrirProntuario(id) {
@@ -440,7 +537,8 @@
         document.getElementById('medicoFoto').src = gato.foto;
         
         const exibeSetor = gato.setor || gato.setor_gatil || 'Gatil Livre';
-        const localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
+        let localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
+        if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
 
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
@@ -450,7 +548,7 @@
             <p><strong>Peso:</strong> ${gato.peso} kg</p>
             <p><strong>Microchip:</strong> ${gato.microchip}</p>
             <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
-            <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.destino==='cti'?'#ef4444':'#10b981'}">${localizacaoTexto}</span></p>
+            <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.ado_status==='Óbito'?'#64748b':(gato.destino==='cti'?'#ef4444':'#10b981')}">${localizacaoTexto}</span></p>
         `;
 
         document.getElementById('txtHistorico').value = gato.historico_clinico || '';
@@ -463,12 +561,16 @@
         document.getElementById('ctiFc').value = gato.cti_fc || '';
         document.getElementById('ctiAlim').value = gato.cti_alim || '';
 
-        document.getElementById('btnSubCti').style.display = (gato.destino === 'cti') ? "block" : "none";
+        // CONDIÇÃO EXCLUSIVA: O monitoramento de parâmetros críticos só é visível se o animal estiver de fato no CTI e não for óbito
+        document.getElementById('btnSubCti').style.display = (gato.destino === 'cti' && gato.ado_status !== 'Óbito') ? "block" : "none";
 
         document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
         document.getElementById('adoData').value = gato.ado_data || '';
+        document.getElementById('obitoDataHora').value = gato.obito_data_hora || '';
+        document.getElementById('obitoCausa').value = gato.obito_causa || '';
         document.getElementById('adoObs').value = gato.ado_obs || '';
 
+        alternarCamposDesfecho();
         atualizarListasInternasDoModal(gato);
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
@@ -511,23 +613,33 @@
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
-            alert('Parâmetros vitais de CTI updated na nuvem!');
+            alert('Parâmetros vitais de CTI atualizados na nuvem!');
             await carregarDadosDoBanco();
         } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
 
     async function salvarStatusAdocao() {
-        try {
-            const { error } = await _supabase.from('gatos').update({
-                ado_status: document.getElementById('adoStatus').value,
-                ado_data: document.getElementById('adoData').value,
-                ado_obs: document.getElementById('adoObs').value
-            }).eq('id', idGatoSelecionado);
+        const status = document.getElementById('adoStatus').value;
+        const payload = {
+            ado_status: status,
+            ado_data: document.getElementById('adoData').value,
+            ado_obs: document.getElementById('adoObs').value,
+            obito_data_hora: status === 'Óbito' ? document.getElementById('obitoDataHora').value : '',
+            obito_causa: status === 'Óbito' ? document.getElementById('obitoCausa').value : ''
+        };
 
+        try {
+            const { error } = await _supabase.from('gatos').update(payload).eq('id', idGatoSelecionado);
             if (error) throw error;
-            alert('Dados de adoção salvos com sucesso!');
+            alert('Dados de desfecho/adoção salvos com sucesso!');
+            fecharModal();
             await carregarDadosDoBanco();
-        } catch(err) { alert("Erro ao salvar: " + err.message); }
+        } catch(err) { alert("Erro ao salvar desfecho: " + err.message); }
+    }
+
+    function abrirJanelaPdf(base64Data) {
+        const novaJanela = window.open();
+        novaJanela.document.write(`<iframe src="${base64Data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
     }
 
     async function adicionarSubItem(tipo) {
@@ -538,11 +650,31 @@
         if (tipo === 'exames') {
             const nome = document.getElementById('exameNome').value;
             const res = document.getElementById('exameResultado').value;
+            const pdfInput = document.getElementById('examePdf').files[0];
             if(!nome) return;
-            const lista = Array.isArray(gato.exames) ? gato.exames : [];
-            lista.unshift({ nome, res, data: dataAgora });
-            dadosAtualizados = { exames: lista };
-            document.getElementById('exameNome').value = ''; document.getElementById('exameResultado').value = '';
+
+            const processarGravacaoExame = (pdfBase64 = '') => {
+                const lista = Array.isArray(gato.exames) ? gato.exames : [];
+                lista.unshift({ nome, res, data: dataAgora, pdf: pdfBase64 });
+                dadosAtualizados = { exames: lista };
+                
+                document.getElementById('exameNome').value = ''; 
+                document.getElementById('exameResultado').value = '';
+                document.getElementById('examePdf').value = '';
+                
+                executarUpdateSubItem(dadosAtualizados);
+            };
+
+            if (pdfInput) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    processarGravacaoExame(e.target.result);
+                };
+                reader.readAsDataURL(pdfInput);
+            } else {
+                processarGravacaoExame();
+            }
+            return; 
         } 
         else if (tipo === 'tratamentos') {
             const med = document.getElementById('tratoMed').value;
@@ -574,8 +706,12 @@
             document.getElementById('ctiEvolucaoTexto').value = '';
         }
 
+        executarUpdateSubItem(dadosAtualizados);
+    }
+
+    async function executarUpdateSubItem(dados) {
         try {
-            const { error } = await _supabase.from('gatos').update(dadosAtualizados).eq('id', idGatoSelecionado);
+            const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;
             await carregarDadosDoBanco();
             const gatoAtualizado = gatos.find(g => g.id === idGatoSelecionado);
@@ -584,9 +720,18 @@
     }
 
     function atualizarListasInternasDoModal(gato) {
-        document.getElementById('listaMedExames').innerHTML = (gato.exames || []).map(e => `
-            <div class="item-registro">📋 <strong>${e.nome}</strong> - Resultado: ${e.res} <small>⏱️ Gravado em: ${e.data}</small></div>
-        `).join('');
+        document.getElementById('listaMedExames').innerHTML = (gato.exames || []).map((e, index) => {
+            const btnPdf = e.pdf ? `<button class="btn-pdf-link" onclick="abrirJanelaPdf('${e.pdf}')">📄 Abrir PDF</button>` : '';
+            return `
+                <div class="item-registro">
+                    <div class="item-registro-content">
+                        📋 <strong>${e.nome}</strong> - Resultado: ${e.res} 
+                        <small>⏱️ Gravado em: ${e.data}</small>
+                    </div>
+                    ${btnPdf}
+                </div>
+            `;
+        }).join('');
 
         document.getElementById('listaMedTratamentos').innerHTML = (gato.tratamentos || []).map(t => `
             <div class="item-registro">💊 <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp} <small>⏱️ Prescrito em: ${t.data}</small></div>
@@ -603,6 +748,11 @@
 
     function converterData(dataString) {
         if(!dataString) return '';
+        if (dataString.includes('T')) { 
+            const partesT = dataString.split('T');
+            const partesD = partesT[0].split('-');
+            return `${partesD[2]}/${partesD[1]}/${partesD[0]} às ${partesT[1]}`;
+        }
         if (dataString.includes('-')) {
             const partes = dataString.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;

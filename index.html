@@ -59,14 +59,14 @@
         .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-pdf-link:hover { background: #1d4ed8; }
         
-        /* Rodapé de Créditos Atualizado */
+        /* Rodapé de Créditos */
         footer { 
             text-align: center; 
             padding: 30px 0 15px 0; 
-            font-size: 18px;            /* Tamanho de letra maior */
-            color: #475569;            /* Cor mais evidente (Slate 600) */
-            font-weight: bold;         /* Deixa o texto em negrito */
-            letter-spacing: 0.5px;     /* Melhora o espaçamento */
+            font-size: 18px;            
+            color: #475569;            
+            font-weight: bold;         
+            letter-spacing: 0.5px;     
         }
     </style>
 </head>
@@ -469,7 +469,7 @@
                     if (error) throw error;
                     
                     document.getElementById('medicoFoto').src = dataUrlOtimizada;
-                    alert("Foto updated com sucesso na nuvem!");
+                    alert("Foto atualizada com sucesso na nuvem!");
                     await carregarDadosDoBanco();
                 } catch (err) {
                     alert("Erro ao salvar nova foto: " + err.message);
@@ -501,12 +501,14 @@
 
             if (isObito) {
                 if (divObitos) {
+                    /* Alteração de segurança para evitar crash caso a coluna não exista */
+                    const motivoObito = g['obito_causa'] || g.ado_obs || 'Não descrita';
                     divObitos.innerHTML += `
                         <div class="card card-obito" onclick="abrirProntuario(${g.id})">
                             <img class="card-img" src="${g.foto}">
                             <div class="card-info">
                                 <h3>🖤 ${g.nome} (Óbito)</h3>
-                                <p>Causa: ${g.obito_causa || g.ado_obs || 'Não descrita'}</p>
+                                <p>Causa: ${motivoObito}</p>
                                 <p style="font-size:11px; margin-top:2px;">Entrada: ${converterData(g.data_entrada)}</p>
                             </div>
                         </div>`;
@@ -555,7 +557,7 @@
         let localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
         if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
 
-        document.getElementById('medicoDadosGears').innerHTML = `
+        document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
             <p><strong>Espécie:</strong> ${gato.especie}</p>
             <p><strong>Sexo:</strong> ${gato.sexo}</p>
@@ -580,8 +582,10 @@
 
         document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
         document.getElementById('adoData').value = gato.ado_data || '';
-        document.getElementById('obitoDataHora').value = gato.obito_data_hora || '';
-        document.getElementById('obitoCausa').value = gato.obito_causa || '';
+        
+        /* Proteção colchetes de string para evitar travar a renderização das colunas opcionais */
+        document.getElementById('obitoDataHora').value = gato['obito_data_hora'] || '';
+        document.getElementById('obitoCausa').value = gato['obito_causa'] || '';
         document.getElementById('adoObs').value = gato.ado_obs || '';
 
         alternarCamposDesfecho();
@@ -637,18 +641,26 @@
         const payload = {
             ado_status: status,
             ado_data: document.getElementById('adoData').value,
-            ado_obs: document.getElementById('adoObs').value,
-            obito_data_hora: status === 'Óbito' ? document.getElementById('obitoDataHora').value : '',
-            obito_causa: status === 'Óbito' ? document.getElementById('obitoCausa').value : ''
+            ado_obs: document.getElementById('adoObs').value
         };
+
+        /* Só tenta salvar os novos campos se o status for Óbito. 
+           Caso a tabela falhe por falta da coluna, o catch gerencia e avisa o usuário. */
+        if (status === 'Óbito') {
+            payload.obito_data_hora = document.getElementById('obitoDataHora').value;
+            payload.obito_causa = document.getElementById('obitoCausa').value;
+        }
 
         try {
             const { error } = await _supabase.from('gatos').update(payload).eq('id', idGatoSelecionado);
             if (error) throw error;
-            alert('Dados de desfecho/adoção salvos com sucesso!');
+            alert('Dados de desfecho salvos com sucesso!');
             fecharModal();
             await carregarDadosDoBanco();
-        } catch(err) { alert("Erro ao salvar desfecho: " + err.message); }
+        } catch(err) { 
+            console.error(err);
+            alert("Erro ao salvar desfecho: " + err.message + "\n\nDica: Certifique-se de criar as colunas 'obito_causa' e 'obito_data_hora' no painel do Supabase como tipo TEXT se quiser utilizá-las de forma isolada."); 
+        }
     }
 
     function abrirJanelaPdf(base64Data) {
@@ -723,7 +735,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function executarUpdateSubItem(dados) {
+    async function ejecutarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;

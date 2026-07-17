@@ -59,8 +59,15 @@
         .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-pdf-link:hover { background: #1d4ed8; }
         
-        /* Rodapé de Créditos */
-        footer { text-align: center; padding: 20px 0 10px 0; font-size: 13px; color: #94a3b8; font-weight: 500; }
+        /* Rodapé de Créditos Atualizado */
+        footer { 
+            text-align: center; 
+            padding: 30px 0 15px 0; 
+            font-size: 18px;            /* Tamanho de letra maior */
+            color: #475569;            /* Cor mais evidente (Slate 600) */
+            font-weight: bold;         /* Deixa o texto em negrito */
+            letter-spacing: 0.5px;     /* Melhora o espaçamento */
+        }
     </style>
 </head>
 <body>
@@ -462,7 +469,7 @@
                     if (error) throw error;
                     
                     document.getElementById('medicoFoto').src = dataUrlOtimizada;
-                    alert("Foto atualizada com sucesso na nuvem!");
+                    alert("Foto updated com sucesso na nuvem!");
                     await carregarDadosDoBanco();
                 } catch (err) {
                     alert("Erro ao salvar nova foto: " + err.message);
@@ -548,7 +555,7 @@
         let localizacaoTexto = gato.destino === 'cti' ? 'CTI (Crítico)' : `Gatil - ${exibeSetor}`;
         if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
 
-        document.getElementById('medicoDadosGerais').innerHTML = `
+        document.getElementById('medicoDadosGears').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
             <p><strong>Espécie:</strong> ${gato.especie}</p>
             <p><strong>Sexo:</strong> ${gato.sexo}</p>
@@ -716,7 +723,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function ejecutarUpdateSubItem(dados) {
+    async function executarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;

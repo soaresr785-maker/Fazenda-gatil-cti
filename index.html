@@ -80,7 +80,7 @@
         .btn-alterar-foto { width: 130px; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; background: #475569; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-alterar-foto:hover { background: #334155; }
         
-        .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px; }
+        .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px; align-items: center; }
         .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
         .box-clinico h4 { margin-bottom: 15px; color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
         
@@ -414,16 +414,12 @@
         }
     }
 
-    // NOVA FUNÇÃO: Gerar PDF de Impressão do Prontuário
+    // Gerar PDF de Impressão do Prontuário
     function gerarPdf() {
         const nomeGato = document.getElementById('modalNomeGato').innerText.replace('Ficha Médica', '').trim();
-        
-        // Pega os dados gerais exibidos na primeira aba
         const dadosGerais = document.getElementById('medicoDadosGerais').innerHTML;
         const historico = document.getElementById('txtHistorico').value;
         const diagnostico = document.getElementById('txtDiagnostico').value;
-        
-        // Formata os tratamentos e exames
         const tratamentos = document.getElementById('listaMedTratamentos').innerHTML;
         const exames = document.getElementById('listaMedExames').innerHTML;
 
@@ -468,7 +464,6 @@
         `);
         janelaPrint.document.close();
         
-        // Aguarda um pequeno momento para renderizar o CSS antes de abrir a tela de print
         setTimeout(() => {
             janelaPrint.print();
         }, 250);
@@ -620,7 +615,7 @@
                     if (error) throw error;
                     
                     document.getElementById('medicoFoto').src = dataUrlOtimizada;
-                    alert("Foto atualizada com sucesso!");
+                    alert("Foto updated successfully!");
                     await carregarDadosDoBanco();
                 } catch (err) {
                     alert("Erro ao salvar nova foto: " + err.message);
@@ -698,11 +693,10 @@
         if(divCti && divCti.innerHTML === '') divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho no CTI.</p>';
         if(divObitos && divObitos.innerHTML === '') divObitos.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum registro.</p>';
         
-        // Recria os ícones inseridos dinamicamente nos cards
         lucide.createIcons();
     }
 
-    function obterDadosMetadadosSeguros(gato) {
+    function obtenerDadosMetadadosSeguros(gato) {
         try {
             if (gato.observacoes_vet && gato.observacoes_vet.startsWith('{')) {
                 return JSON.parse(gato.observacoes_vet);
@@ -722,7 +716,7 @@
         let localizacaoTexto = gato.destino === 'cti' ? 'CTI' : exibeSetor;
         if(gato.ado_status === 'Óbito') localizacaoTexto = 'Óbito';
 
-        const metadados = obterDadosMetadadosSeguros(gato);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
 
         document.getElementById('medicoDadosGerais').innerHTML = `
             <p><strong>Nome:</strong> ${gato.nome}</p>
@@ -730,7 +724,13 @@
             <p><strong>Sexo:</strong> ${gato.sexo}</p>
             <p><strong>Idade:</strong> ${gato.idade}</p>
             <p><strong>Peso:</strong> ${gato.peso} kg</p>
-            <p><strong>Microchip:</strong> ${gato.microchip}</p>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <strong>Microchip:</strong> 
+                <input type="text" id="editMicrochip" value="${gato.microchip || ''}" style="padding:5px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; width:150px;">
+                <button class="print-hide" onclick="salvarMicrochip()" style="background:#10b981; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
+                    <i data-lucide="save" style="width:14px; height:14px;"></i> Salvar
+                </button>
+            </div>
             <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
             <p><strong>Castrado:</strong> ${metadados.castrado || 'Não informado'}</p>
             <p><strong>Vermifugação:</strong> ${metadados.vermifugacao ? converterData(metadados.vermifugacao) : 'Nenhuma cadastrada'}</p>
@@ -774,6 +774,28 @@
         lucide.createIcons();
     }
 
+    async function salvarMicrochip() {
+        const novoMicrochip = document.getElementById('editMicrochip').value;
+        try {
+            const { error } = await _supabase.from('gatos')
+                .update({ microchip: novoMicrochip })
+                .eq('id', idGatoSelecionado);
+
+            if (error) throw error;
+            
+            alert('Microchip atualizado com sucesso!');
+            await carregarDadosDoBanco();
+            
+            // Recarrega as informações atualizadas na tela da ficha aberta
+            const gatoAtualizado = gatos.find(g => g.id === idGatoSelecionado);
+            if (gatoAtualizado) {
+                abrirProntuario(idGatoSelecionado);
+            }
+        } catch (err) {
+            alert("Erro ao atualizar o microchip no banco de dados: " + err.message);
+        }
+    }
+
     async function transferirGatoDeSetor() {
         const novoSetor = document.getElementById('selectMudarSetor').value;
         const novoDestino = (novoSetor === 'CTI') ? 'cti' : 'gatil';
@@ -810,7 +832,7 @@
 
     async function atualizarCamposTexto() {
         const gato = gatos.find(g => g.id === idGatoSelecionado);
-        const metadados = obterDadosMetadadosSeguros(gato);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
         metadados.textoLivre = document.getElementById('txtObsVet').value;
 
         try {
@@ -828,7 +850,7 @@
 
     async function salvarManejoGeral() {
         const gato = gatos.find(g => g.id === idGatoSelecionado);
-        const metadados = obterDadosMetadadosSeguros(gato);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
         
         metadados.castrado = document.getElementById('manejoCastrado').value;
         metadados.vermifugacao = document.getElementById('manejoVermifugacao').value;
@@ -905,7 +927,7 @@
             });
         }
 
-        const metadados = obterDadosMetadadosSeguros(gato);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
         if (Array.isArray(metadados.arquivos)) {
             metadados.arquivos.forEach(arq => {
                 eventos.push({
@@ -1025,7 +1047,7 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const metadados = obterDadosMetadadosSeguros(gato);
+                const metadados = obtenerDadosMetadadosSeguros(gato);
                 if (!Array.isArray(metadados.arquivos)) metadados.arquivos = [];
                 
                 metadados.arquivos.unshift({
@@ -1075,7 +1097,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function executarUpdateSubItem(dados) {
+    async function ejecutarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;
@@ -1099,7 +1121,7 @@
             `;
         }).join('');
 
-        const metadados = obterDadosMetadadosSeguros(gato);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
         document.getElementById('listaArquivosGerais').innerHTML = (metadados.arquivos || []).map(arq => `
             <div class="item-registro">
                 <div class="item-registro-content">

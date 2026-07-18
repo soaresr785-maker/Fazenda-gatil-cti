@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Sistema Clínico Veterinário - Gestão Felina (Supabase)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Biblioteca de Ícones Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Biblioteca de Ícones Lucide (versão fixa, com fallback caso o unpkg falhe/seja bloqueado) -->
+    <script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.js" onerror="this.onerror=null; var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.js'; document.head.appendChild(s);"></script>
     <style>
         :root {
             --bg-main: #f8fafc;
@@ -199,7 +199,7 @@
         </div>
     </div>
 
-    <!-- GATIL (Estrutura Kanban Inovadora) -->
+    <!-- GATIL -->
     <div id="gatil" class="aba-principal">
         <div class="grid-setores">
             <div class="setor-container"><div class="setor-titulo"><i data-lucide="smile"></i> Gatil Livre</div><div id="setor-GatilLivre" class="lista-cards"></div></div>
@@ -330,10 +330,12 @@
             <div id="sub-tratamento" class="sub-aba">
                 <div class="box-clinico">
                     <h4><i data-lucide="pill"></i> Prescrição e Fármacos</h4>
-                    <div class="mini-form print-hide" style="grid-template-columns: 2fr 1fr 1fr 2fr auto;">
+                    <div class="mini-form print-hide" style="grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr auto;">
                         <div class="field"><label>Medicamento</label><input type="text" id="tratoMed"></div>
                         <div class="field"><label>Dose</label><input type="text" id="tratoDose" placeholder="Ex: 2mg"></div>
                         <div class="field"><label>Horário</label><input type="text" id="tratoHorario" placeholder="Ex: 8h/8h"></div>
+                        <div class="field"><label>Início</label><input type="date" id="tratoInicio"></div>
+                        <div class="field"><label>Fim</label><input type="date" id="tratoFim"></div>
                         <div class="field"><label>Responsável</label><input type="text" id="tratoResp" placeholder="Nome"></div>
                         <button onclick="adicionarSubItem('tratamentos')"><i data-lucide="check"></i> Prescrever</button>
                     </div>
@@ -437,12 +439,27 @@
 </footer>
 
 <script>
-    lucide.createIcons();
+    function renderizarIcones() {
+        if (window.lucide && typeof lucide.createIcons === 'function') {
+            lucide.createIcons();
+        }
+    }
+    renderizarIcones();
 
     const SUPABASE_URL = "https://eekbrwngdoiorplijizz.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVla2Jyd25nZG9pb3JwbGlqaXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2NTMsImV4cCI6MjA5OTczMjY1M30.mc4BAE3RV4OxqRV_gVc8D8qsbQHgonRSMLv4jCy7pmI";
     
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function escapeHtml(valor) {
+        if (valor === null || valor === undefined) return '';
+        return String(valor)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     let gatos = [];
     let idGatoSelecionado = null;
@@ -456,8 +473,19 @@
             gatos = data || [];
             renderizarPaineis();
         } catch (err) {
-            console.error("Erro ao carregar dados:", err.message);
-            alert("Erro ao conectar com o banco de dados.");
+            console.error("Erro ao carregar dados:", err);
+            const ehErroDeAmbientePreview = err && err.name === 'DataCloneError';
+
+            if (ehErroDeAmbientePreview) {
+                alert(
+                    "Este ambiente de pré-visualização está bloqueando a conexão com o banco de dados " +
+                    "(erro técnico: DataCloneError em postMessage).\n\n" +
+                    "Abra o arquivo diretamente no navegador (fora de um preview/iframe) ou hospede-o " +
+                    "em um servidor real (GitHub Pages, Netlify, Vercel etc.) para carregar os dados normalmente."
+                );
+            } else {
+                alert("Erro ao conectar com o banco de dados: " + (err.message || err));
+            }
         }
     }
 
@@ -472,7 +500,7 @@
         const janelaPrint = window.open('', '', 'width=900,height=700');
         
         janelaPrint.document.write(`
-            <html><head><title>Prontuário - ${nomeGato}</title>
+            <html><head><title>Prontuário - ${escapeHtml(nomeGato)}</title>
             <style>
                 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
                 h1 { color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; }
@@ -490,8 +518,8 @@
                 <div class="dados-grid">${dadosGerais}</div>
                 <h2>Histórico e Diagnóstico</h2>
                 <div class="text-box">
-                    <strong>Histórico:</strong><br>${historico || 'Nenhum registro.'}<br><br>
-                    <strong>Diagnóstico:</strong><br>${diagnostico || 'Nenhum registro.'}
+                    <strong>Histórico:</strong><br>${escapeHtml(historico) || 'Nenhum registro.'}<br><br>
+                    <strong>Diagnóstico:</strong><br>${escapeHtml(diagnostico) || 'Nenhum registro.'}
                 </div>
                 <h2>Prescrições e Tratamentos</h2>
                 <div>${tratamentos || '<p>Nenhum tratamento registrado.</p>'}</div>
@@ -673,7 +701,7 @@
         const termoBusca = document.getElementById('inputBusca').value.toLowerCase().trim();
 
         gatos.forEach(g => {
-            const bateNome = g.nome.toLowerCase().includes(termoBusca);
+            const bateNome = (g.nome || '').toLowerCase().includes(termoBusca);
             const bateMicrochip = (g.microchip || '').toLowerCase().includes(termoBusca);
 
             if (termoBusca !== '' && !bateNome && !bateMicrochip) return;
@@ -685,11 +713,11 @@
                     const motivoObito = g['obito_causa'] || g.ado_obs || 'Não descrita';
                     divObitos.innerHTML += `
                         <div class="card card-obito" onclick="abrirProntuario(${g.id})">
-                            <img class="card-img" src="${g.foto}">
+                            <img class="card-img" src="${escapeHtml(g.foto)}">
                             <div class="card-info">
-                                <h3><i data-lucide="heart-crack" style="width:16px; color:var(--muted);"></i> ${g.nome}</h3>
-                                <p>Causa: ${motivoObito}</p>
-                                <p style="font-size:11px; margin-top:4px;">Entrada: ${converterData(g.data_entrada)}</p>
+                                <h3><i data-lucide="heart-crack" style="width:16px; color:var(--muted);"></i> ${escapeHtml(g.nome)}</h3>
+                                <p>Causa: ${escapeHtml(motivoObito)}</p>
+                                <p style="font-size:11px; margin-top:4px;">Entrada: ${escapeHtml(converterData(g.data_entrada))}</p>
                             </div>
                         </div>`;
                 }
@@ -700,11 +728,11 @@
 
             const cardHtml = `
                 <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
-                    <img class="card-img" src="${g.foto}">
+                    <img class="card-img" src="${escapeHtml(g.foto)}">
                     <div class="card-info">
-                        <h3>${g.nome}</h3>
-                        <p>Chip: ${g.microchip || 'N/A'}</p>
-                        <p style="font-size:12px; margin-top:4px; color:var(--muted);">Peso: ${g.peso} kg | Sexo: ${g.sexo}</p>
+                        <h3>${escapeHtml(g.nome)}</h3>
+                        <p>Chip: ${escapeHtml(g.microchip) || 'N/A'}</p>
+                        <p style="font-size:12px; margin-top:4px; color:var(--muted);">Peso: ${escapeHtml(g.peso)} kg | Sexo: ${escapeHtml(g.sexo)}</p>
                     </div>
                     ${ctiPulseHtml}
                 </div>`;
@@ -728,7 +756,7 @@
         if(divCti && divCti.innerHTML === '') divCti.innerHTML = '<p style="color:var(--muted); font-size:13px; font-style:italic;">Nenhum gatinho no CTI.</p>';
         if(divObitos && divObitos.innerHTML === '') divObitos.innerHTML = '<p style="color:var(--muted); font-size:13px; font-style:italic;">Nenhum registro encontrado.</p>';
         
-        lucide.createIcons();
+        renderizarIcones();
     }
 
     function obtenerDadosMetadadosSeguros(gato) {
@@ -744,7 +772,7 @@
         idGatoSelecionado = id;
         const gato = gatos.find(g => g.id === id);
         
-        document.getElementById('modalNomeGato').innerHTML = `<i data-lucide="clipboard-list"></i> Ficha Médica: ${gato.nome}`;
+        document.getElementById('modalNomeGato').innerHTML = `<i data-lucide="clipboard-list"></i> Ficha Médica: ${escapeHtml(gato.nome)}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
         const exibeSetor = gato.setor_gatil || gato.setor || 'Gatil Livre';
@@ -754,22 +782,22 @@
         const metadados = obtenerDadosMetadadosSeguros(gato);
 
         document.getElementById('medicoDadosGerais').innerHTML = `
-            <p><strong>Nome:</strong> ${gato.nome}</p>
-            <p><strong>Espécie:</strong> ${gato.especie}</p>
-            <p><strong>Sexo:</strong> ${gato.sexo}</p>
-            <p><strong>Idade:</strong> ${gato.idade}</p>
-            <p><strong>Peso:</strong> ${gato.peso} kg</p>
+            <p><strong>Nome:</strong> ${escapeHtml(gato.nome)}</p>
+            <p><strong>Espécie:</strong> ${escapeHtml(gato.especie)}</p>
+            <p><strong>Sexo:</strong> ${escapeHtml(gato.sexo)}</p>
+            <p><strong>Idade:</strong> ${escapeHtml(gato.idade)}</p>
+            <p><strong>Peso:</strong> ${escapeHtml(gato.peso)} kg</p>
             <div style="display:flex; align-items:center; gap:8px; background: #f8fafc; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid #f1f5f9;">
                 <strong style="white-space:nowrap;">Microchip:</strong> 
-                <input type="text" id="editMicrochip" value="${gato.microchip || ''}" style="padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; width:100%; background:#fff;">
+                <input type="text" id="editMicrochip" value="${escapeHtml(gato.microchip || '')}" style="padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; width:100%; background:#fff;">
                 <button class="print-hide" onclick="salvarMicrochip()" style="background:var(--success); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
                     <i data-lucide="save" style="width:14px; height:14px;"></i>
                 </button>
             </div>
-            <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
-            <p><strong>Castrado:</strong> ${metadados.castrado || 'Não informado'}</p>
-            <p><strong>Vermifugação:</strong> ${metadados.vermifugacao ? converterData(metadados.vermifugacao) : 'Nenhuma'}</p>
-            <p><strong>Setor Atual:</strong> <span style="font-weight:700; color:${gato.ado_status==='Óbito'?'var(--muted)':(gato.destino==='cti'?'var(--danger)':'var(--success)')}">${localizacaoTexto}</span></p>
+            <p><strong>Data de Entrada:</strong> ${escapeHtml(converterData(gato.data_entrada))}</p>
+            <p><strong>Castrado:</strong> ${escapeHtml(metadados.castrado || 'Não informado')}</p>
+            <p><strong>Vermifugação:</strong> ${metadados.vermifugacao ? escapeHtml(converterData(metadados.vermifugacao)) : 'Nenhuma'}</p>
+            <p><strong>Setor Atual:</strong> <span style="font-weight:700; color:${gato.ado_status==='Óbito'?'var(--muted)':(gato.destino==='cti'?'var(--danger)':'var(--success)')}">${escapeHtml(localizacaoTexto)}</span></p>
         `;
 
         document.getElementById('containerSecaoTransferencia').style.display = (gato.ado_status === 'Óbito') ? 'none' : 'flex';
@@ -806,7 +834,7 @@
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
         
-        lucide.createIcons();
+        renderizarIcones();
     }
 
     async function salvarMicrochip() {
@@ -903,7 +931,7 @@
         if (gato.data_entrada) {
             eventos.push({
                 titulo: "<i data-lucide='log-in' style='width:16px;'></i> Admissão do Paciente",
-                descricao: `Gato inserido no sistema com destino para o setor: ${gato.setor_gatil || gato.setor || 'Gatil Livre'}. Peso inicial: ${gato.peso}kg.`,
+                descricao: `Gato inserido no sistema com destino para o setor: ${escapeHtml(gato.setor_gatil || gato.setor || 'Gatil Livre')}. Peso inicial: ${escapeHtml(gato.peso)}kg.`,
                 data: converterData(gato.data_entrada)
             });
         }
@@ -911,8 +939,8 @@
         if (Array.isArray(gato.exames)) {
             gato.exames.forEach(e => {
                 eventos.push({
-                    titulo: `<i data-lucide='file-spreadsheet' style='width:16px;'></i> Exame: ${e.nome}`,
-                    descricao: `Resultado reportado: ${e.res}`,
+                    titulo: `<i data-lucide='file-spreadsheet' style='width:16px;'></i> Exame: ${escapeHtml(e.nome)}`,
+                    descricao: `Resultado reportado: ${escapeHtml(e.res)}`,
                     data: e.data
                 });
             });
@@ -922,7 +950,7 @@
             gato.tratamentos.forEach(t => {
                 eventos.push({
                     titulo: `<i data-lucide='pill' style='width:16px;'></i> Prescrição Médica`,
-                    descricao: `Medicamento: ${t.med} | Dosagem: ${t.dose} | Horários: ${t.hora} (Por: ${t.resp || 'N/I'})`,
+                    descricao: `Medicamento: ${escapeHtml(t.med)} | Dosagem: ${escapeHtml(t.dose)} | Horários: ${escapeHtml(t.hora)} <br> Período: ${escapeHtml(t.inicio) || 'N/I'} a ${escapeHtml(t.fim) || 'N/I'} <br> (Por: ${escapeHtml(t.resp) || 'N/I'})`,
                     data: t.data
                 });
             });
@@ -931,8 +959,8 @@
         if (Array.isArray(gato.vacinas)) {
             gato.vacinas.forEach(v => {
                 eventos.push({
-                    titulo: `<i data-lucide='syringe' style='width:16px;'></i> Imunização: ${v.nome}`,
-                    descricao: `Vacina aplicada. Próxima dose prevista para: ${v.prox || 'Não exige'}`,
+                    titulo: `<i data-lucide='syringe' style='width:16px;'></i> Imunização: ${escapeHtml(v.nome)}`,
+                    descricao: `Vacina aplicada. Próxima dose prevista para: ${escapeHtml(v.prox) || 'Não exige'}`,
                     data: v.aplicar
                 });
             });
@@ -942,7 +970,7 @@
             gato.cti_evolucao.forEach(ev => {
                 eventos.push({
                     titulo: `<i data-lucide='activity' style='width:16px;'></i> Evolução de Plantão`,
-                    descricao: ev.texto,
+                    descricao: escapeHtml(ev.texto),
                     data: ev.data
                 });
             });
@@ -953,7 +981,7 @@
             metadados.arquivos.forEach(arq => {
                 eventos.push({
                     titulo: `<i data-lucide='file-text' style='width:16px;'></i> Arquivo Anexado`,
-                    descricao: `Documento PDF anexado: "${arq.descricao}"`,
+                    descricao: `Documento PDF anexado: "${escapeHtml(arq.descricao)}"`,
                     data: arq.data
                 });
             });
@@ -970,13 +998,13 @@
                     <div class="tl-content">
                         <h4>${ev.titulo}</h4>
                         <p>${ev.descricao}</p>
-                        <span><i data-lucide='clock' style='width:12px;'></i> ${ev.data}</span>
+                        <span><i data-lucide='clock' style='width:12px;'></i> ${escapeHtml(ev.data)}</span>
                     </div>
                 </div>
             `;
         });
         
-        lucide.createIcons();
+        renderizarIcones();
     }
 
     async function salvarParametrosCti() {
@@ -1020,8 +1048,22 @@
     }
 
     function abrirJanelaPdf(base64Data) {
+        if (!base64Data) return;
         const novaJanela = window.open();
         novaJanela.document.write(`<iframe src="${base64Data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+    }
+
+    function abrirJanelaPdfExame(index) {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        const exame = gato && Array.isArray(gato.exames) ? gato.exames[index] : null;
+        if (exame && exame.pdf) abrirJanelaPdf(exame.pdf);
+    }
+
+    function abrirJanelaPdfArquivo(index) {
+        const gato = gatos.find(g => g.id === idGatoSelecionado);
+        const metadados = obtenerDadosMetadadosSeguros(gato);
+        const arquivo = Array.isArray(metadados.arquivos) ? metadados.arquivos[index] : null;
+        if (arquivo && arquivo.pdfBase64) abrirJanelaPdf(arquivo.pdfBase64);
     }
 
     async function adicionarSubItem(tipo) {
@@ -1085,33 +1127,21 @@
             return;
         }
         else if (tipo === 'tratamentos') {
-            const med = document.getElementById('tratoMed').value.trim();
+            const med = document.getElementById('tratoMed').value;
             const dose = document.getElementById('tratoDose').value;
             const hora = document.getElementById('tratoHorario').value;
+            const inicio = document.getElementById('tratoInicio').value;
+            const fim = document.getElementById('tratoFim').value;
             const resp = document.getElementById('tratoResp').value;
-            
-            if (!med) {
-                alert("O campo Medicamento é obrigatório para registrar a prescrição!");
-                return;
-            }
-            
-            let lista = [];
-            if (Array.isArray(gato.tratamentos)) {
-                lista = [...gato.tratamentos];
-            } else if (typeof gato.tratamentos === 'string' && gato.tratamentos !== '') {
-                try { 
-                    lista = JSON.parse(gato.tratamentos); 
-                } catch(e) { 
-                    lista = []; 
-                }
-            }
-            
-            lista.unshift({ med, dose, hora, resp, data: dataAgora });
+            if(!med) return;
+            const lista = Array.isArray(gato.tratamentos) ? gato.tratamentos : [];
+            lista.unshift({ med, dose, hora, inicio: converterData(inicio), fim: converterData(fim), resp, data: dataAgora });
             dadosAtualizados = { tratamentos: lista };
-            
             document.getElementById('tratoMed').value = ''; 
             document.getElementById('tratoDose').value = ''; 
             document.getElementById('tratoHorario').value = ''; 
+            document.getElementById('tratoInicio').value = ''; 
+            document.getElementById('tratoFim').value = ''; 
             document.getElementById('tratoResp').value = '';
         }
         else if (tipo === 'vacinas') {
@@ -1148,12 +1178,12 @@
 
     function atualizarListasInternasDoModal(gato) {
         document.getElementById('listaMedExames').innerHTML = (gato.exames || []).map((e, index) => {
-            const btnPdf = e.pdf ? `<button class="btn-pdf-link hide-on-print" onclick="abrirJanelaPdf('${e.pdf}')"><i data-lucide="external-link"></i> Abrir PDF</button>` : '';
+            const btnPdf = e.pdf ? `<button class="btn-pdf-link hide-on-print" data-pdf-index="${index}" onclick="abrirJanelaPdfExame(${index})"><i data-lucide="external-link"></i> Abrir PDF</button>` : '';
             return `
                 <div class="item-registro">
                     <div class="item-registro-content">
-                        <strong>${e.nome}</strong> — Resultado: ${e.res} 
-                        <small>Gravado em: ${e.data}</small>
+                        <strong>${escapeHtml(e.nome)}</strong> — Resultado: ${escapeHtml(e.res)} 
+                        <small>Gravado em: ${escapeHtml(e.data)}</small>
                     </div>
                     ${btnPdf}
                 </div>
@@ -1161,47 +1191,32 @@
         }).join('');
 
         const metadados = obtenerDadosMetadadosSeguros(gato);
-        document.getElementById('listaArquivosGerais').innerHTML = (metadados.arquivos || []).map(arq => `
+        document.getElementById('listaArquivosGerais').innerHTML = (metadados.arquivos || []).map((arq, index) => `
             <div class="item-registro">
                 <div class="item-registro-content">
-                    <strong>${arq.descricao}</strong>
-                    <small>Upload em: ${arq.data}</small>
+                    <strong>${escapeHtml(arq.descricao)}</strong>
+                    <small>Upload em: ${escapeHtml(arq.data)}</small>
                 </div>
-                <button class="btn-pdf-link hide-on-print" style="background:rgba(16, 185, 129, 0.1); color: var(--success);" onclick="abrirJanelaPdf('${arq.pdfBase64}')"><i data-lucide="file-text"></i> Visualizar</button>
+                <button class="btn-pdf-link hide-on-print" style="background:rgba(16, 185, 129, 0.1); color: var(--success);" onclick="abrirJanelaPdfArquivo(${index})"><i data-lucide="file-text"></i> Visualizar</button>
             </div>
         `).join('');
 
-        let tratamentosSeguros = [];
-        if (Array.isArray(gato.tratamentos)) {
-            tratamentosSeguros = gato.tratamentos;
-        } else if (typeof gato.tratamentos === 'string') {
-            try { 
-                tratamentosSeguros = JSON.parse(gato.tratamentos) || []; 
-            } catch(e) { 
-                tratamentosSeguros = []; 
-            }
-        }
-
-        const divTratamentos = document.getElementById('listaMedTratamentos');
-        if (divTratamentos) {
-            if (tratamentosSeguros.length === 0) {
-                divTratamentos.innerHTML = '<p style="color:var(--muted); font-size:13px; font-style:italic;">Nenhum tratamento registrado.</p>';
-            } else {
-                divTratamentos.innerHTML = tratamentosSeguros.map(t => `
-                    <div class="item-registro">
-                        <div class="item-registro-content">
-                            <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Aplicação por: ${t.resp || 'N/I'}
-                            <small>Prescrito em: ${t.data}</small>
-                        </div>
+        document.getElementById('listaMedTratamentos').innerHTML = (gato.tratamentos || []).map(t => `
+            <div class="item-registro">
+                <div class="item-registro-content">
+                    <strong>${escapeHtml(t.med)}</strong> | Dose: ${escapeHtml(t.dose)} | Horário: ${escapeHtml(t.hora)}
+                    <div style="margin-top:4px; font-size:12px; color:#475569;">
+                        Período: <span style="font-weight:600;">${escapeHtml(t.inicio) || 'Não informado'}</span> até <span style="font-weight:600;">${escapeHtml(t.fim) || 'Não informado'}</span> | Aplicação por: ${escapeHtml(t.resp) || 'N/A'}
                     </div>
-                `).join('');
-            }
-        }
+                    <small>Prescrito em: ${escapeHtml(t.data)}</small>
+                </div>
+            </div>
+        `).join('');
 
         document.getElementById('listaMedVacinas').innerHTML = (gato.vacinas || []).map(v => `
             <div class="item-registro">
                 <div class="item-registro-content">
-                    <strong>${v.nome}</strong> — Aplicada em: ${v.aplicar || 'N/A'} | Próximo Reforço: <span style="color:var(--primary); font-weight:700;">${v.prox || 'Não exige'}</span>
+                    <strong>${escapeHtml(v.nome)}</strong> — Aplicada em: ${escapeHtml(v.aplicar) || 'N/A'} | Próximo Reforço: <span style="color:var(--primary); font-weight:700;">${escapeHtml(v.prox) || 'Não exige'}</span>
                 </div>
             </div>
         `).join('');
@@ -1209,13 +1224,13 @@
         document.getElementById('listaMedEvolucao').innerHTML = (gato.cti_evolucao || []).map(ev => `
             <div class="item-registro" style="border-left: 4px solid var(--danger);">
                 <div class="item-registro-content">
-                    ${ev.texto} 
-                    <small>Plantão: ${ev.data}</small>
+                    ${escapeHtml(ev.texto)} 
+                    <small>Plantão: ${escapeHtml(ev.data)}</small>
                 </div>
             </div>
         `).join('');
         
-        lucide.createIcons();
+        renderizarIcones();
     }
 
     function converterData(dataString) {

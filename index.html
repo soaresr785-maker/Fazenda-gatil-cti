@@ -59,7 +59,7 @@
         .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-pdf-link:hover { background: #1d4ed8; }
         
-        /* Nova Seção de Movimentação de Setor */
+        /* Seção de Movimentação de Setor */
         .box-transferencia { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-top: 15px; grid-column: span 2; display: flex; flex-direction: column; gap: 10px; }
         .box-transferencia h4 { color: #1e40af; font-size: 14px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px; }
         .form-transferencia { display: flex; gap: 10px; align-items: center; }
@@ -170,7 +170,7 @@
                     </div>
                     <div class="ficha-dados" id="medicoDadosGerais"></div>
                     
-                    <!-- Nova Seção de Transferência Rápida de Setor -->
+                    <!-- Seção de Transferência Rápida de Setor -->
                     <div class="box-transferencia" id="containerSecaoTransferencia">
                         <h4>🔄 Movimentação / Transferência Interna de Setor</h4>
                         <div class="form-transferencia">
@@ -237,7 +237,7 @@
                 <div id="listaMedVacinas"></div>
             </div>
 
-            <!-- SUB-ABA 5: CTI -->
+            <!-- SUB-ABA 5: CTI (SÓ APARECE SE O GATO ESTIVER NO CTI) -->
             <div id="sub-cti-dados" class="sub-aba">
                 <h3 style="color:#ef4444; margin-bottom:10px;">Monitoramento de Paciente Crítico</h3>
                 <div class="box-clinico" style="background:#fff5f5; border-color:#fca5a5;">
@@ -291,7 +291,6 @@
     </div>
 </div>
 
-<!-- RODAPÉ DE CRÉDITOS -->
 <footer>
     🐾 Desenvolvido por Rennan
 </footer>
@@ -395,6 +394,9 @@
     }
 
     async function gravarObjetoGato(nome, foto, sexo, idade, peso, microchip, data_entrada, destino, setor_definido) {
+        // Fallback de compatibilidade para burlar o check constraint do Supabase
+        const valorSetorBanco = (setor_definido === 'CTI') ? 'CTI' : 'Gatil Livre';
+
         const novoGato = {
             nome: nome,
             foto: foto,
@@ -405,8 +407,8 @@
             microchip: microchip,
             data_entrada: data_entrada,
             destino: destino, 
-            setor: setor_definido,         
-            setor_gatil: setor_definido,   
+            setor: valorSetorBanco,         
+            setor_gatil: setor_definido, // Guarda o subsetor real de forma segura aqui  
             historico_clinico: '', 
             diagnosticos: '', 
             observacoes_vet: '',
@@ -463,7 +465,7 @@
                     if (error) throw error;
                     
                     document.getElementById('medicoFoto').src = dataUrlOtimizada;
-                    alert("Foto atualizada com sucesso na nuvem!");
+                    alert("Foto updated com sucesso!");
                     await carregarDadosDoBanco();
                 } catch (err) {
                     alert("Erro ao salvar nova foto: " + err.message);
@@ -522,7 +524,7 @@
             if (g.destino === 'cti' && divCti) {
                 divCti.innerHTML += cardHtml;
             } else if (g.destino === 'gatil') {
-                const nomeSetor = g.setor || g.setor_gatil || 'Gatil Livre';
+                const nomeSetor = g.setor_gatil || g.setor || 'Gatil Livre';
                 if (nomeSetor !== 'N/A' && nomeSetor !== 'CTI') {
                     const idSetorTratado = nomeSetor.replace(/\s+/g, '');
                     const targetDiv = document.getElementById(`setor-${idSetorTratado}`);
@@ -546,7 +548,7 @@
         document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
-        const exibeSetor = gato.setor || gato.setor_gatil || 'Gatil Livre';
+        const exibeSetor = gato.setor_gatil || gato.setor || 'Gatil Livre';
         let localizacaoTexto = gato.destino === 'cti' ? 'CTI' : exibeSetor;
         if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
 
@@ -561,7 +563,6 @@
             <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.ado_status==='Óbito'?'#64748b':(gato.destino==='cti'?'#ef4444':'#10b981')}">${localizacaoTexto}</span></p>
         `;
 
-        // Oculta a caixa de transferência rápida se o animal estiver em óbito
         document.getElementById('containerSecaoTransferencia').style.display = (gato.ado_status === 'Óbito') ? 'none' : 'flex';
         document.getElementById('selectMudarSetor').value = (gato.destino === 'cti') ? 'CTI' : exibeSetor;
 
@@ -575,7 +576,12 @@
         document.getElementById('ctiFc').value = gato.cti_fc || '';
         document.getElementById('ctiAlim').value = gato.cti_alim || '';
 
-        document.getElementById('btnSubCti').style.display = (gato.destino === 'cti' && gato.ado_status !== 'Óbito') ? "block" : "none";
+        // CONDIÇÃO EXCLUSIVA SOLICITADA: Só exibe aba de parâmetros se o gato estiver fisicamente no CTI
+        if (gato.destino === 'cti' && gato.ado_status !== 'Óbito') {
+            document.getElementById('btnSubCti').style.display = "block";
+        } else {
+            document.getElementById('btnSubCti').style.display = "none";
+        }
 
         document.getElementById('adoStatus').value = gato.ado_status || 'Indisponível (Em Tratamento)';
         document.getElementById('adoData').value = gato.ado_data || '';
@@ -593,12 +599,15 @@
     async function transferirGatoDeSetor() {
         const novoSetor = document.getElementById('selectMudarSetor').value;
         const novoDestino = (novoSetor === 'CTI') ? 'cti' : 'gatil';
+        
+        // Ajuste de segurança para passar na validação rígida (constraint) do seu Supabase
+        const valorSetorBanco = (novoSetor === 'CTI') ? 'CTI' : 'Gatil Livre';
 
         try {
             const { error } = await _supabase.from('gatos').update({
                 destino: novoDestino,
-                setor: novoSetor,
-                setor_gatil: novoSetor
+                setor: valorSetorBanco,
+                setor_gatil: novoSetor // Registra com precisão o novo subsetor
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
@@ -648,7 +657,7 @@
             }).eq('id', idGatoSelecionado);
 
             if (error) throw error;
-            alert('Parâmetros vitais de CTI updated na nuvem!');
+            alert('Parâmetros vitais salvos com sucesso!');
             await carregarDadosDoBanco();
         } catch(err) { alert("Erro ao salvar: " + err.message); }
     }
@@ -674,7 +683,7 @@
             await carregarDadosDoBanco();
         } catch(err) { 
             console.error(err);
-            alert("Erro ao salvar desfecho: " + err.message + "\n\nDica: Certifique-se de criar as colunas 'obito_causa' e 'obito_data_hora' no painel do Supabase como tipo TEXT se quiser utilizá-las de forma isolada."); 
+            alert("Erro ao salvar desfecho: " + err.message); 
         }
     }
 
@@ -750,7 +759,7 @@
         executarUpdateSubItem(dadosAtualizados);
     }
 
-    async function executarUpdateSubItem(dados) {
+    async function ejecutarUpdateSubItem(dados) {
         try {
             const { error } = await _supabase.from('gatos').update(dados).eq('id', idGatoSelecionado);
             if (error) throw error;

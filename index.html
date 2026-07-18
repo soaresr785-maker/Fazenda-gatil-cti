@@ -4,103 +4,142 @@
     <meta charset="UTF-8">
     <title>Sistema Clínico Veterinário - Gestão Felina (Supabase)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca de Ícones Lucide adicionada -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f1f5f9; padding: 20px; color: #1e293b; display: flex; flex-direction: column; min-height: 100vh; }
-        .container { max-width: 1100px; margin: auto; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); flex: 1; }
+        .container { max-width: 1100px; margin: auto; width: 100%; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); flex: 1; }
         h1 { margin-bottom: 20px; font-size: 24px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+        
         .nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
-        .nav-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: 600; color: #64748b; transition: all 0.2s; }
-        .nav-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
-        .busca-container { margin-bottom: 25px; position: relative; }
-        .busca-input { width: 100%; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 15px; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+        .nav-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-weight: 600; color: #64748b; transition: all 0.3s ease; }
+        .nav-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+        .nav-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); }
+        
+        .busca-container { margin-bottom: 25px; position: relative; display: flex; align-items: center; }
+        .busca-container i { position: absolute; left: 15px; color: #94a3b8; width: 18px; }
+        .busca-input { width: 100%; padding: 12px 15px 12px 40px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 15px; transition: all 0.3s ease; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
         .busca-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        .aba-principal { display: none; }
+        
+        .aba-principal { display: none; animation: fadeIn 0.4s ease; }
         .aba-principal.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
         .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .field { display: flex; flex-direction: column; gap: 5px; }
         .field label { font-size: 13px; font-weight: 600; color: #475569; }
-        input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; }
+        input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; width: 100%; transition: all 0.2s ease; }
+        input:focus, select:focus, textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         input[type="file"] { padding: 7px; background: #fff; cursor: pointer; }
-        .btn-salvar { padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 200px; }
-        .setor-container { margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .setor-titulo { font-size: 16px; font-weight: bold; color: #334155; margin-bottom: 12px; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; }
+        
+        .btn-salvar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 220px; transition: all 0.2s ease; }
+        .btn-salvar:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2); }
+
+        .setor-container { margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .setor-titulo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #334155; margin-bottom: 12px; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; }
         .lista-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; gap: 12px; align-items: center; }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        
+        /* Melhorias Visuais nos Cards */
+        .card { background: white; border: 1px solid #e2e8f0; border-left: 8px solid #3b82f6; padding: 15px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; gap: 12px; align-items: center; position: relative; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-left-width: 12px; }
         .card-cti { border-left-color: #ef4444; }
         .card-obito { border-left-color: #64748b; background: #f1f5f9; opacity: 0.8; }
-        .card-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 1px solid #cbd5e1; }
+        .card-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .card-info h3 { color: #0f172a; font-size: 16px; margin-bottom: 2px; }
         .card-info p { font-size: 13px; color: #64748b; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; width: 95%; max-width: 950px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
-        .modal-header { padding: 15px 20px; background: #0f172a; color: white; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Bolinha de Status CTI (Micro-animação) */
+        .status-pulse { position: absolute; right: 15px; top: 15px; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* Modal Melhorado */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; width: 95%; max-width: 950px; height: 90vh; border-radius: 16px; display: flex; flex-direction: column; animation: slideUp 0.3s ease; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-header { padding: 15px 20px; background: #0f172a; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header-actions { display: flex; align-items: center; gap: 15px; }
+        .btn-imprimir { background: #3b82f6; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: 0.2s; }
+        .btn-imprimir:hover { background: #2563eb; }
+        
         .modal-body { padding: 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-        .sub-nav { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 8px; overflow-x: auto; }
-        .sub-btn { flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #475569; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #ef4444; }
+        
+        .sub-nav { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 10px; overflow-x: auto; }
+        .sub-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: none; background: transparent; font-weight: 600; color: #475569; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; transition: 0.2s; }
+        .sub-btn:hover { background: #e2e8f0; }
         .sub-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .sub-nav.sub-aba { display: none; }
-        .sub-aba.active { display: block; }
-        .grid-ficha { display: grid; grid-template-columns: 140px 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .container-foto-ficha { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-        .ficha-foto { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1; background: #cbd5e1; }
-        .btn-alterar-foto { width: 120px; padding: 6px; background: #475569; color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
-        .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; }
-        .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .box-clinico h4 { margin-bottom: 10px; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; font-size: 15px; }
-        .mini-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; align-items: flex-end; }
-        .mini-form button { padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; }
+        .sub-aba.active { display: block; animation: fadeIn 0.3s ease; }
+        
+        .grid-ficha { display: grid; grid-template-columns: 140px 1fr; gap: 20px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .container-foto-ficha { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .ficha-foto { width: 130px; height: 130px; border-radius: 12px; object-fit: cover; border: 2px solid #cbd5e1; background: #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-alterar-foto { width: 130px; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; background: #475569; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-alterar-foto:hover { background: #334155; }
+        
+        .ficha-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px; }
+        .box-clinico { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+        .box-clinico h4 { margin-bottom: 15px; color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .mini-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; align-items: flex-end; }
+        .mini-form button { padding: 10px; display: flex; align-items: center; justify-content: center; gap: 5px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .mini-form button:hover { background: #2563eb; }
+        
+        .item-registro { background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .item-registro:hover { border-color: #cbd5e1; transform: translateX(2px); }
         .item-registro-content { flex: 1; }
-        .item-registro small { color: #94a3b8; display: block; margin-top: 4px; }
-        .btn-pdf-link { padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .item-registro small { color: #94a3b8; display: block; margin-top: 6px; font-size: 11px; }
+        .btn-pdf-link { display: flex; align-items: center; gap: 5px; padding: 6px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-pdf-link:hover { background: #1d4ed8; }
         
         /* CSS Estilizado para a Linha do Tempo (Timeline) */
         .timeline { position: relative; max-width: 100%; margin: 10px auto; padding: 10px 0; }
-        .timeline::after { content: ''; position: absolute; width: 4px; background-color: #cbd5e1; top: 0; bottom: 0; left: 20px; margin-left: -2px; }
-        .tl-container { padding: 10px 10px 10px 40px; position: relative; background-color: inherit; width: 100%; }
-        .tl-container::after { content: ''; position: absolute; width: 14px; height: 14px; left: 13px; top: 15px; background-color: white; border: 4px solid #3b82f6; border-radius: 50%; z-index: 1; }
-        .tl-content { padding: 12px 15px; background-color: #f8fafc; position: relative; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .tl-content h4 { font-size: 14px; color: #1e293b; margin-bottom: 4px; }
-        .tl-content p { font-size: 13px; color: #475569; }
-        .tl-content span { font-size: 11px; color: #94a3b8; display: block; margin-top: 5px; }
+        .timeline::after { content: ''; position: absolute; width: 4px; background-color: #cbd5e1; top: 0; bottom: 0; left: 20px; margin-left: -2px; border-radius: 2px; }
+        .tl-container { padding: 10px 10px 10px 45px; position: relative; background-color: inherit; width: 100%; }
+        .tl-container::after { content: ''; position: absolute; width: 16px; height: 16px; left: 14px; top: 15px; background-color: white; border: 4px solid #3b82f6; border-radius: 50%; z-index: 1; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .tl-content { padding: 15px; background-color: #f8fafc; position: relative; border-radius: 12px; border: 1px solid #e2e8f0; transition: 0.2s; }
+        .tl-content:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+        .tl-content h4 { font-size: 14px; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .tl-content p { font-size: 13px; color: #475569; line-height: 1.5; }
+        .tl-content span { font-size: 11px; color: #94a3b8; display: block; margin-top: 8px; }
 
-        .box-transferencia { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-top: 15px; grid-column: span 2; display: flex; flex-direction: column; gap: 10px; }
-        .box-transferencia h4 { color: #1e40af; font-size: 14px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px; }
+        .box-transferencia { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 12px; margin-top: 15px; grid-column: span 2; display: flex; flex-direction: column; gap: 10px; }
+        .box-transferencia h4 { color: #1e40af; font-size: 14px; border-bottom: 1px solid #bfdbfe; padding-bottom: 8px; display: flex; align-items: center; gap: 6px;}
         .form-transferencia { display: flex; gap: 10px; align-items: center; }
-        .btn-transferir { padding: 10px 15px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        .btn-transferir { padding: 10px 15px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; transition: 0.2s; }
         .btn-transferir:hover { background: #1d4ed8; }
 
-        footer { text-align: center; padding: 30px 0 15px 0; font-size: 18px; color: #475569; font-weight: bold; letter-spacing: 0.5px; }
+        footer { text-align: center; padding: 30px 0 15px 0; font-size: 14px; color: #94a3b8; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🐱 Fichas Médicas Felinas</h1>
+    <h1><i data-lucide="cat"></i> VetFlow Feline - Gestão Clínica</h1>
     
     <div class="nav">
-        <button class="nav-btn active" onclick="mudarAba('cadastro', this)">➕ Adicionar Gato</button>
-        <button class="nav-btn" onclick="mudarAba('gatil', this)">🏠 Gatil</button>
-        <button class="nav-btn" onclick="mudarAba('cti', this)">🏥 CTI</button>
-        <button class="nav-btn" onclick="mudarAba('historico-obitos', this)">🖤 Histórico/Óbitos</button>
+        <button class="nav-btn active" onclick="mudarAba('cadastro', this)"><i data-lucide="plus-circle"></i> Adicionar Gato</button>
+        <button class="nav-btn" onclick="mudarAba('gatil', this)"><i data-lucide="home"></i> Gatil</button>
+        <button class="nav-btn" onclick="mudarAba('cti', this)"><i data-lucide="activity"></i> CTI</button>
+        <button class="nav-btn" onclick="mudarAba('historico-obitos', this)"><i data-lucide="archive"></i> Histórico/Óbitos</button>
     </div>
 
     <div class="busca-container" id="containerBusca" style="display: none;">
-        <input type="text" id="inputBusca" class="busca-input" placeholder="🔍 Buscar gatinho por Nome ou número do Microchip..." oninput="renderizarPaineis()">
+        <i data-lucide="search"></i>
+        <input type="text" id="inputBusca" class="busca-input" placeholder="Buscar gatinho por Nome ou número do Microchip..." oninput="renderizarPaineis()">
     </div>
 
     <!-- CADASTRO -->
     <div id="cadastro" class="aba-principal active">
-        <h2>Identificação Inicial</h2>
-        <form id="formGato" onsubmit="adicionarGato(event)" style="margin-top: 15px;">
+        <h2 style="display:flex; align-items:center; gap:8px; margin-bottom: 15px;"><i data-lucide="file-text"></i> Identificação Inicial</h2>
+        <form id="formGato" onsubmit="adicionarGato(event)">
             <div class="form-group">
                 <div class="field"><label>Nome</label><input type="text" id="nome" required placeholder="Ex: Mingau"></div>
                 <div class="field"><label>Foto do Gato</label><input type="file" id="fotoArquivo" accept="image/*"></div>
-                <div class="field"><label>Espécie</label><input type="text" id="especie" value="Felina (Gato)" readonly></div>
+                <div class="field"><label>Espécie</label><input type="text" id="especie" value="Felina (Gato)" readonly style="background:#f1f5f9;"></div>
                 <div class="field"><label>Sexo</label><select id="sexo"><option value="Macho">Macho</option><option value="Fêmea">Fêmea</option></select></div>
                 <div class="field"><label>Idade</label><input type="text" id="idade" placeholder="Ex: 3 anos"></div>
                 <div class="field"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" required placeholder="Ex: 4.2"></div>
@@ -119,33 +158,33 @@
                     </select>
                 </div>
             </div>
-            <button type="submit" class="btn-salvar">Criar Prontuário</button>
+            <button type="submit" class="btn-salvar"><i data-lucide="save"></i> Criar Prontuário</button>
         </form>
     </div>
 
     <!-- GATIL -->
     <div id="gatil" class="aba-principal">
-        <h2>Setores do Gatil</h2>
-        <div style="margin-top: 15px;">
-            <div class="setor-container"><div class="setor-titulo">🏡 Gatil Livre</div><div id="setor-GatilLivre" class="lista-cards"></div></div>
-            <div class="setor-container"><div class="setor-titulo">⭐ Especial 1</div><div id="setor-Especial1" class="lista-cards"></div></div>
-            <div class="setor-container"><div class="setor-titulo">⭐ Especial 2</div><div id="setor-Especial2" class="lista-cards"></div></div>
-            <div class="setor-container"><div class="setor-titulo">⭐ Especial 3</div><div id="setor-Especial3" class="lista-cards"></div></div>
-            <div class="setor-container"><div class="setor-titulo">🧪 FIV</div><div id="setor-FIV" class="lista-cards"></div></div>
-            <div class="setor-container"><div class="setor-titulo">🧪 FELV</div><div id="setor-FELV" class="lista-cards"></div></div>
+        <h2 style="display:flex; align-items:center; gap:8px; margin-bottom: 15px;"><i data-lucide="map-pin"></i> Setores do Gatil</h2>
+        <div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="home"></i> Gatil Livre</div><div id="setor-GatilLivre" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="star"></i> Especial 1</div><div id="setor-Especial1" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="star"></i> Especial 2</div><div id="setor-Especial2" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="star"></i> Especial 3</div><div id="setor-Especial3" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="flask-conical"></i> FIV</div><div id="setor-FIV" class="lista-cards"></div></div>
+            <div class="setor-container"><div class="setor-titulo"><i data-lucide="flask-conical"></i> FELV</div><div id="setor-FELV" class="lista-cards"></div></div>
         </div>
     </div>
 
     <!-- CTI -->
     <div id="cti" class="aba-principal">
-        <h2>Pacientes Críticos (CTI)</h2>
-        <div id="listaCti" class="lista-cards" style="margin-top: 15px;"></div>
+        <h2 style="display:flex; align-items:center; gap:8px; margin-bottom: 15px; color: #ef4444;"><i data-lucide="heart-pulse"></i> Pacientes Críticos (CTI)</h2>
+        <div id="listaCti" class="lista-cards"></div>
     </div>
 
     <!-- HISTÓRICO / ÓBITOS -->
     <div id="historico-obitos" class="aba-principal">
-        <h2>Registro e Memorial de Óbitos</h2>
-        <p style="color:#64748b; margin-bottom:15px; font-size:14px; font-style:italic;">Espaço destinado à memória e registros legais dos pacientes que nos deixaram.</p>
+        <h2 style="display:flex; align-items:center; gap:8px; margin-bottom: 5px;"><i data-lucide="book-open"></i> Registro e Memorial</h2>
+        <p style="color:#64748b; margin-bottom:20px; font-size:14px; font-style:italic;">Espaço destinado à memória e registros legais dos pacientes.</p>
         <div id="listaObitos" class="lista-cards"></div>
     </div>
 </div>
@@ -154,21 +193,24 @@
 <div id="modalProntuario" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 id="modalNomeGato">🐾 Ficha Médica Completa</h2>
-            <button class="close-btn" onclick="fecharModal()">&times;</button>
+            <h2 id="modalNomeGato" style="display:flex; align-items:center; gap:10px;"><i data-lucide="clipboard-list"></i> Ficha Médica</h2>
+            <div class="modal-header-actions">
+                <button class="btn-imprimir" onclick="gerarPdf()"><i data-lucide="printer"></i> PDF</button>
+                <button class="close-btn" onclick="fecharModal()"><i data-lucide="x"></i></button>
+            </div>
         </div>
         
-        <div class="modal-body">
-            <div class="sub-nav">
-                <button class="sub-btn active" onclick="mudarSubAba('sub-identificacao', this)">📋 Identificação</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-manejo', this)">🩺 Manejo Geral</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-prontuario', this)">🔬 Prontuário/Exames</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-tratamento', this)">💊 Tratamentos</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-vacinas', this)">💉 Vacinação</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-arquivos', this)">📂 Arquivos Gerais</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-linha-tempo', this); gerarLinhaTempo();">⏳ Linha do Tempo</button>
-                <button class="sub-btn" id="btnSubCti" onclick="mudarSubAba('sub-cti-dados', this)">🚑 Parâmetros CTI</button>
-                <button class="sub-btn" onclick="mudarSubAba('sub-adocao', this)">🏡 Destino</button>
+        <div class="modal-body" id="areaParaImpressao">
+            <div class="sub-nav print-hide">
+                <button class="sub-btn active" onclick="mudarSubAba('sub-identificacao', this)"><i data-lucide="user"></i> Perfil</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-manejo', this)"><i data-lucide="stethoscope"></i> Manejo</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-prontuario', this)"><i data-lucide="microscope"></i> Exames</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-tratamento', this)"><i data-lucide="pill"></i> Medicamentos</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-vacinas', this)"><i data-lucide="syringe"></i> Vacinas</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-arquivos', this)"><i data-lucide="folder"></i> Arquivos</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-linha-tempo', this); gerarLinhaTempo();"><i data-lucide="clock"></i> Timeline</button>
+                <button class="sub-btn" id="btnSubCti" onclick="mudarSubAba('sub-cti-dados', this)" style="color:#ef4444;"><i data-lucide="activity"></i> UTI</button>
+                <button class="sub-btn" onclick="mudarSubAba('sub-adocao', this)"><i data-lucide="log-out"></i> Desfecho</button>
             </div>
 
             <!-- SUB-ABA 1: IDENTIFICAÇÃO -->
@@ -177,12 +219,12 @@
                     <div class="container-foto-ficha">
                         <img id="medicoFoto" class="ficha-foto" src="" alt="Foto do paciente">
                         <input type="file" id="alterarFotoInput" accept="image/*" style="display:none;" onchange="processarAlteracaoFoto(this)">
-                        <button class="btn-alterar-foto" onclick="document.getElementById('alterarFotoInput').click()">📸 Alterar Foto</button>
+                        <button class="btn-alterar-foto print-hide" onclick="document.getElementById('alterarFotoInput').click()"><i data-lucide="camera"></i> Mudar Foto</button>
                     </div>
                     <div class="ficha-dados" id="medicoDadosGerais"></div>
                     
-                    <div class="box-transferencia" id="containerSecaoTransferencia">
-                        <h4>🔄 Movimentação / Transferência Interna de Setor</h4>
+                    <div class="box-transferencia print-hide" id="containerSecaoTransferencia">
+                        <h4><i data-lucide="arrow-right-left"></i> Transferência Interna de Setor</h4>
                         <div class="form-transferencia">
                             <select id="selectMudarSetor">
                                 <option value="Gatil Livre">Gatil Livre</option>
@@ -193,16 +235,16 @@
                                 <option value="FIV">FIV</option>
                                 <option value="FELV">FELV</option>
                             </select>
-                            <button class="btn-transferir" onclick="transferirGatoDeSetor()">Transferir de Setor</button>
+                            <button class="btn-transferir" onclick="transferirGatoDeSetor()"><i data-lucide="move-right"></i> Transferir</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- NOVA SUB-ABA: MANEJO GERAL (CASTRADO E VERMIFUGAÇÃO) -->
+            <!-- SUB-ABA: MANEJO -->
             <div id="sub-manejo" class="sub-aba">
-                <h3>Manejo Clínico e Sanitário</h3>
-                <div class="box-clinico" style="margin-top:10px;">
+                <h3><i data-lucide="stethoscope"></i> Manejo Clínico e Sanitário</h3>
+                <div class="box-clinico">
                     <div class="form-group" style="grid-template-columns: 1fr 1fr;">
                         <div class="field">
                             <label>O animal é Castrado?</label>
@@ -217,28 +259,28 @@
                             <input type="date" id="manejoVermifugacao">
                         </div>
                     </div>
-                    <button class="btn-salvar" style="padding:10px; width:auto;" onclick="salvarManejoGeral()">Salvar Manejo Sanitário</button>
+                    <button class="btn-salvar print-hide" style="padding:10px; width:auto;" onclick="salvarManejoGeral()"><i data-lucide="save"></i> Salvar Manejo</button>
                 </div>
             </div>
 
             <!-- SUB-ABA 2: PRONTUÁRIO -->
             <div id="sub-prontuario" class="sub-aba">
                 <div class="box-clinico">
-                    <h4>Histórico Clínico & Diagnósticos</h4>
-                    <div class="form-group" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div class="field"><label>Histórico Clínico</label><textarea id="txtHistorico" rows="2"></textarea></div>
-                        <div class="field"><label>Diagnósticos</label><textarea id="txtDiagnostico" rows="2"></textarea></div>
+                    <h4><i data-lucide="file-text"></i> Histórico & Diagnósticos</h4>
+                    <div class="form-group" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="field"><label>Histórico Clínico</label><textarea id="txtHistorico" rows="3"></textarea></div>
+                        <div class="field"><label>Diagnósticos</label><textarea id="txtDiagnostico" rows="3"></textarea></div>
                     </div>
-                    <div class="field"><label>Observações Veterinárias Gerais</label><textarea id="txtObsVet" rows="2"></textarea></div>
-                    <button class="btn-salvar" style="padding:8px; width:auto; margin-top:10px;" onclick="atualizarCamposTexto()">Salvar Texto Clínico</button>
+                    <div class="field"><label>Observações Gerais</label><textarea id="txtObsVet" rows="2"></textarea></div>
+                    <button class="btn-salvar print-hide" style="padding:10px; width:auto; margin-top:15px;" onclick="atualizarCamposTexto()"><i data-lucide="save"></i> Salvar Textos</button>
                 </div>
                 <div class="box-clinico">
-                    <h4>🔬 Exames Realizados</h4>
-                    <div class="mini-form" style="grid-template-columns: 1fr 1fr 1fr auto;">
+                    <h4><i data-lucide="microscope"></i> Exames Realizados</h4>
+                    <div class="mini-form print-hide" style="grid-template-columns: 1fr 1fr 1fr auto;">
                         <div class="field"><label>Exame</label><input type="text" id="exameNome" placeholder="Ex: Hemograma"></div>
                         <div class="field"><label>Resultado/Laudo</label><input type="text" id="exameResultado" placeholder="Resultados"></div>
-                        <div class="field"><label>Anexo do Exame (PDF)</label><input type="file" id="examePdf" accept="application/pdf"></div>
-                        <button onclick="adicionarSubItem('exames')">Anexar</button>
+                        <div class="field"><label>Anexo (PDF)</label><input type="file" id="examePdf" accept="application/pdf"></div>
+                        <button onclick="adicionarSubItem('exames')"><i data-lucide="plus"></i> Anexar</button>
                     </div>
                     <div id="listaMedExames"></div>
                 </div>
@@ -246,74 +288,74 @@
 
             <!-- SUB-ABA 3: TRATAMENTO -->
             <div id="sub-tratamento" class="sub-aba">
-                <h3>Prescrição e Manejo de Fármacos</h3>
-                <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr 2fr auto;">
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:15px;"><i data-lucide="pill"></i> Prescrição e Fármacos</h3>
+                <div class="mini-form print-hide" style="grid-template-columns: 2fr 1fr 1fr 2fr auto;">
                     <div class="field"><label>Medicamento</label><input type="text" id="tratoMed"></div>
                     <div class="field"><label>Dose</label><input type="text" id="tratoDose" placeholder="Ex: 2mg"></div>
                     <div class="field"><label>Horário</label><input type="text" id="tratoHorario" placeholder="Ex: 8h/8h"></div>
-                    <div class="field"><label>Responsável</label><input type="text" id="tratoResp" placeholder="Nome do Vet/Aux"></div>
-                    <button onclick="adicionarSubItem('tratamentos')">Prescrever</button>
+                    <div class="field"><label>Responsável</label><input type="text" id="tratoResp" placeholder="Nome"></div>
+                    <button onclick="adicionarSubItem('tratamentos')"><i data-lucide="check"></i> Prescrever</button>
                 </div>
                 <div id="listaMedTratamentos"></div>
             </div>
 
             <!-- SUB-ABA 4: VACINAÇÃO -->
             <div id="sub-vacinas" class="sub-aba">
-                <h3>Histórico de Imunização</h3>
-                <div class="mini-form" style="grid-template-columns: 2fr 1fr 1fr auto;">
-                    <div class="field"><label>Vacina Aplicada</label><input type="text" id="vacNome" placeholder="Ex: Quádrupla (V4)"></div>
-                    <div class="field"><label>Data da Aplicação</label><input type="date" id="vacData"></div>
-                    <div class="field"><label>Próxima Dose / Reforço</label><input type="date" id="vacProxima"></div>
-                    <button onclick="adicionarSubItem('vacinas')">Registrar</button>
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:15px;"><i data-lucide="syringe"></i> Histórico de Imunização</h3>
+                <div class="mini-form print-hide" style="grid-template-columns: 2fr 1fr 1fr auto;">
+                    <div class="field"><label>Vacina Aplicada</label><input type="text" id="vacNome" placeholder="Ex: V4"></div>
+                    <div class="field"><label>Data</label><input type="date" id="vacData"></div>
+                    <div class="field"><label>Reforço</label><input type="date" id="vacProxima"></div>
+                    <button onclick="adicionarSubItem('vacinas')"><i data-lucide="check"></i> Registrar</button>
                 </div>
                 <div id="listaMedVacinas"></div>
             </div>
 
-            <!-- NOVA SUB-ABA: ARQUIVOS GERAIS (ANEXAR QUALQUER PDF) -->
+            <!-- SUB-ABA: ARQUIVOS -->
             <div id="sub-arquivos" class="sub-aba">
-                <h3>📂 Central de Arquivos e Documentos</h3>
-                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">Use este espaço para anexar termos de adoção, laudos externos, laudos de ultrassom ou qualquer arquivo PDF.</p>
-                <div class="mini-form" style="grid-template-columns: 2fr 3fr auto;">
-                    <div class="field"><label>Descrição / Nome do Documento</label><input type="text" id="docDescricao" placeholder="Ex: Termo de Responsabilidade / Ultrassom"></div>
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:5px;"><i data-lucide="folder"></i> Central de Arquivos</h3>
+                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">Anexe termos de adoção, laudos ou qualquer PDF.</p>
+                <div class="mini-form print-hide" style="grid-template-columns: 2fr 3fr auto;">
+                    <div class="field"><label>Descrição do Documento</label><input type="text" id="docDescricao" placeholder="Ex: Termo de Responsabilidade"></div>
                     <div class="field"><label>Arquivo (PDF)</label><input type="file" id="docArquivoPdf" accept="application/pdf"></div>
-                    <button onclick="adicionarSubItem('arquivos')">Fazer Upload</button>
+                    <button onclick="adicionarSubItem('arquivos')"><i data-lucide="upload"></i> Upload</button>
                 </div>
                 <div id="listaArquivosGerais"></div>
             </div>
 
-            <!-- NOVA SUB-ABA: LINHA DO TEMPO (TIMELINE) -->
+            <!-- SUB-ABA: TIMELINE -->
             <div id="sub-linha-tempo" class="sub-aba">
-                <h3>⏳ Linha do Tempo de Atendimentos</h3>
-                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">Histórico cronológico unificado de todos os eventos registrados no prontuário.</p>
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:5px;"><i data-lucide="clock"></i> Linha do Tempo</h3>
+                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">Histórico cronológico unificado do paciente.</p>
                 <div class="timeline" id="timelineContainer"></div>
             </div>
 
             <!-- SUB-ABA 5: CTI -->
             <div id="sub-cti-dados" class="sub-aba">
-                <h3 style="color:#ef4444; margin-bottom:10px;">Monitoramento de Paciente Crítico</h3>
+                <h3 style="color:#ef4444; margin-bottom:15px; display:flex; align-items:center; gap:8px;"><i data-lucide="activity"></i> Monitoramento Crítico</h3>
                 <div class="box-clinico" style="background:#fff5f5; border-color:#fca5a5;">
                     <div class="form-group" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
                         <div class="field"><label>Gaiola N°</label><input type="text" id="ctiGaiola"></div>
-                        <div class="field"><label>Temperatura (°C)</label><input type="text" id="ctiTemp"></div>
-                        <div class="field"><label>Freq. Resp. (mpm)</label><input type="text" id="ctiFr"></div>
-                        <div class="field"><label>Freq. Card. (bpm)</label><input type="text" id="ctiFc"></div>
-                        <div class="field"><label>Alimentação</label><input type="text" id="ctiAlim" placeholder="Ex: Sonda / Sachê"></div>
+                        <div class="field"><label>Temp. (°C)</label><input type="text" id="ctiTemp"></div>
+                        <div class="field"><label>F. Resp.</label><input type="text" id="ctiFr"></div>
+                        <div class="field"><label>F. Card.</label><input type="text" id="ctiFc"></div>
+                        <div class="field"><label>Alimentação</label><input type="text" id="ctiAlim" placeholder="Ex: Sonda"></div>
                     </div>
-                    <button class="btn-salvar" style="background:#ef4444; padding:8px; width:auto;" onclick="salvarParametrosCti()">Atualizar Parâmetros Críticos</button>
+                    <button class="btn-salvar print-hide" style="background:#ef4444; padding:10px; width:auto;" onclick="salvarParametrosCti()"><i data-lucide="save"></i> Atualizar Parâmetros</button>
                 </div>
                 <div class="box-clinico">
-                    <h4>📋 Evolução Diária / Plantão</h4>
-                    <div class="mini-form" style="grid-template-columns: 1fr auto;">
-                        <div class="field"><label>Anotação de Evolução</label><input type="text" id="ctiEvolucaoTexto" placeholder="Ex: Apresentou melhora no padrão respiratório."></div>
-                        <button style="background:#ef4444;" onclick="adicionarSubItem('evolucao')">Inserir</button>
+                    <h4><i data-lucide="clipboard-pen"></i> Evolução Diária</h4>
+                    <div class="mini-form print-hide" style="grid-template-columns: 1fr auto;">
+                        <div class="field"><label>Anotação de Plantão</label><input type="text" id="ctiEvolucaoTexto" placeholder="Ex: Melhora no padrão respiratório."></div>
+                        <button style="background:#ef4444;" onclick="adicionarSubItem('evolucao')"><i data-lucide="plus"></i> Inserir</button>
                     </div>
                     <div id="listaMedEvolucao"></div>
                 </div>
             </div>
 
-            <!-- SUB-ABA 6: ADOÇÃO / DESFECHO -->
+            <!-- SUB-ABA 6: DESFECHO -->
             <div id="sub-adocao" class="sub-aba">
-                <h3>Gerenciamento de Destino do Animal</h3>
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:15px;"><i data-lucide="log-out"></i> Destino do Animal</h3>
                 <div class="box-clinico">
                     <div class="form-group" style="grid-template-columns: 1fr 1fr;">
                         <div class="field">
@@ -322,20 +364,20 @@
                                 <option value="Indisponível (Em Tratamento)">Indisponível (Em Tratamento)</option>
                                 <option value="Disponível para Adoção">Disponível para Adoção</option>
                                 <option value="Adotado">Adotado</option>
-                                <option value="Óbito">🖤 Óbito</option>
+                                <option value="Óbito">Óbito</option>
                             </select>
                         </div>
-                        <div class="field" id="containerDataAdocao"><label>Data da Adoção (se adotado)</label><input type="date" id="adoData"></div>
+                        <div class="field" id="containerDataAdocao"><label>Data da Adoção</label><input type="date" id="adoData"></div>
                         <div class="field" id="containerDataObito" style="display:none;"><label>Data/Hora do Óbito</label><input type="datetime-local" id="obitoDataHora"></div>
                     </div>
                     
                     <div class="field" id="containerCausaObito" style="display:none; margin-bottom: 15px;">
-                        <label>Causa do Óbito / Suspeita Clinical</label>
-                        <input type="text" id="obitoCausa" placeholder="Ex: Parada Cardiorrespiratória secundária à PIF">
+                        <label>Causa do Óbito / Suspeita Clínica</label>
+                        <input type="text" id="obitoCausa" placeholder="Ex: Parada Cardiorrespiratória">
                     </div>
 
-                    <div class="field"><label>Observações Adicionais do Desfecho / Histórico</label><textarea id="adoObs" rows="3"></textarea></div>
-                    <button class="btn-salvar" style="background:#8b5cf6;" onclick="salvarStatusAdocao()">Atualizar Status de Adoção / Óbito</button>
+                    <div class="field"><label>Observações Adicionais</label><textarea id="adoObs" rows="3"></textarea></div>
+                    <button class="btn-salvar print-hide" style="background:#8b5cf6; padding:10px; width:auto; margin-top:15px;" onclick="salvarStatusAdocao()"><i data-lucide="save"></i> Atualizar Status</button>
                 </div>
             </div>
         </div>
@@ -343,10 +385,13 @@
 </div>
 
 <footer>
-    🐾 Desenvolvido por Rennan
+    <i data-lucide="cat" style="width: 18px;"></i> Desenvolvido por Rennan
 </footer>
 
 <script>
+    // Inicializa ícones na primeira carga
+    lucide.createIcons();
+
     const SUPABASE_URL = "https://eekbrwngdoiorplijizz.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVla2Jyd25nZG9pb3JwbGlqaXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2NTMsImV4cCI6MjA5OTczMjY1M30.mc4BAE3RV4OxqRV_gVc8D8qsbQHgonRSMLv4jCy7pmI";
     
@@ -367,6 +412,66 @@
             console.error("Erro ao carregar dados:", err.message);
             alert("Erro ao conectar com o banco de dados.");
         }
+    }
+
+    // NOVA FUNÇÃO: Gerar PDF de Impressão do Prontuário
+    function gerarPdf() {
+        const nomeGato = document.getElementById('modalNomeGato').innerText.replace('Ficha Médica', '').trim();
+        
+        // Pega os dados gerais exibidos na primeira aba
+        const dadosGerais = document.getElementById('medicoDadosGerais').innerHTML;
+        const historico = document.getElementById('txtHistorico').value;
+        const diagnostico = document.getElementById('txtDiagnostico').value;
+        
+        // Formata os tratamentos e exames
+        const tratamentos = document.getElementById('listaMedTratamentos').innerHTML;
+        const exames = document.getElementById('listaMedExames').innerHTML;
+
+        const janelaPrint = window.open('', '', 'width=900,height=700');
+        
+        janelaPrint.document.write(`
+            <html><head><title>Prontuário - ${nomeGato}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+                h1 { color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; }
+                h2 { color: #3b82f6; font-size: 18px; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+                .dados-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+                .text-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; margin-top: 10px; }
+                .item-registro { border-bottom: 1px solid #e2e8f0; padding: 8px 0; font-size: 13px; }
+                .item-registro small { color: #64748b; display: block; }
+                .hide-on-print { display: none !important; }
+                @media print { body { padding: 0; } }
+            </style>
+            </head><body>
+                <h1>Clínica Veterinária - Prontuário Médico</h1>
+                
+                <h2>Identificação do Paciente</h2>
+                <div class="dados-grid">${dadosGerais}</div>
+                
+                <h2>Histórico e Diagnóstico</h2>
+                <div class="text-box">
+                    <strong>Histórico:</strong><br>${historico || 'Nenhum registro.'}<br><br>
+                    <strong>Diagnóstico:</strong><br>${diagnostico || 'Nenhum registro.'}
+                </div>
+                
+                <h2>Prescrições e Tratamentos</h2>
+                <div>${tratamentos || '<p>Nenhum tratamento registrado.</p>'}</div>
+                
+                <h2>Exames Realizados</h2>
+                <div>${exames || '<p>Nenhum exame registrado.</p>'}</div>
+
+                <hr style="margin-top: 50px; border: 0; border-top: 1px solid #e2e8f0;">
+                <p style="text-align: center; font-size: 11px; color: #64748b;">
+                    Documento gerado pelo sistema VetFlow em ${new Date().toLocaleString('pt-BR')}
+                </p>
+            </body></html>
+        `);
+        janelaPrint.document.close();
+        
+        // Aguarda um pequeno momento para renderizar o CSS antes de abrir a tela de print
+        setTimeout(() => {
+            janelaPrint.print();
+        }, 250);
     }
 
     function alternarCamposDesfecho() {
@@ -393,7 +498,7 @@
         btn.classList.add('active');
         
         const containerBusca = document.getElementById('containerBusca');
-        containerBusca.style.display = (id === 'gatil' || id === 'cti' || id === 'historico-obitos') ? 'block' : 'none';
+        containerBusca.style.display = (id === 'gatil' || id === 'cti' || id === 'historico-obitos') ? 'flex' : 'none';
         renderizarPaineis();
     }
 
@@ -461,7 +566,7 @@
             setor_gatil: setor_definido,  
             historico_clinico: '', 
             diagnosticos: '', 
-            observacoes_vet: '', // Será usado também para guardar arquivos gerais e manejo de forma invisível/segura
+            observacoes_vet: '', 
             exames: [], 
             tratamentos: [], 
             vacinas: [],
@@ -552,23 +657,26 @@
                         <div class="card card-obito" onclick="abrirProntuario(${g.id})">
                             <img class="card-img" src="${g.foto}">
                             <div class="card-info">
-                                <h3>🖤 ${g.nome} (Óbito)</h3>
+                                <h3><i data-lucide="cross" style="width:16px;"></i> ${g.nome}</h3>
                                 <p>Causa: ${motivoObito}</p>
-                                <p style="font-size:11px; margin-top:2px;">Entrada: ${converterData(g.data_entrada)}</p>
+                                <p style="font-size:11px; margin-top:4px;">Entrada: ${converterData(g.data_entrada)}</p>
                             </div>
                         </div>`;
                 }
                 return; 
             }
 
+            const ctiPulseHtml = g.destino === 'cti' ? '<div class="status-pulse"></div>' : '';
+
             const cardHtml = `
                 <div class="card ${g.destino === 'cti' ? 'card-cti' : ''}" onclick="abrirProntuario(${g.id})">
                     <img class="card-img" src="${g.foto}">
                     <div class="card-info">
-                        <h3>🐾 ${g.nome}</h3>
+                        <h3>${g.nome}</h3>
                         <p>Chip: ${g.microchip || 'N/A'}</p>
-                        <p style="font-size:12px; margin-top:2px; color:#64748b;">Peso: ${g.peso} kg | Sexo: ${g.sexo}</p>
+                        <p style="font-size:12px; margin-top:4px; color:#64748b;">Peso: ${g.peso} kg | Sexo: ${g.sexo}</p>
                     </div>
+                    ${ctiPulseHtml}
                 </div>`;
             
             if (g.destino === 'cti' && divCti) {
@@ -585,13 +693,15 @@
 
         setoresIds.forEach(id => {
             const el = document.getElementById(`setor-${id}`);
-            if(el && el.innerHTML === '') el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho encontrado.</p>';
+            if(el && el.innerHTML === '') el.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic; padding-top:10px;">Vazio.</p>';
         });
         if(divCti && divCti.innerHTML === '') divCti.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum gatinho no CTI.</p>';
-        if(divObitos && divObitos.innerHTML === '') divObitos.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum registro de óbito.</p>';
+        if(divObitos && divObitos.innerHTML === '') divObitos.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum registro.</p>';
+        
+        // Recria os ícones inseridos dinamicamente nos cards
+        lucide.createIcons();
     }
 
-    // Função auxiliar para carregar dados guardados com segurança em formato JSON dentro do campo texto
     function obterDadosMetadadosSeguros(gato) {
         try {
             if (gato.observacoes_vet && gato.observacoes_vet.startsWith('{')) {
@@ -605,14 +715,13 @@
         idGatoSelecionado = id;
         const gato = gatos.find(g => g.id === id);
         
-        document.getElementById('modalNomeGato').innerText = `🐾 Ficha Médica Completa: ${gato.nome}`;
+        document.getElementById('modalNomeGato').innerHTML = `<i data-lucide="clipboard-list"></i> Ficha Médica: ${gato.nome}`;
         document.getElementById('medicoFoto').src = gato.foto;
         
         const exibeSetor = gato.setor_gatil || gato.setor || 'Gatil Livre';
         let localizacaoTexto = gato.destino === 'cti' ? 'CTI' : exibeSetor;
-        if(gato.ado_status === 'Óbito') localizacaoTexto = '🖤 Óbito';
+        if(gato.ado_status === 'Óbito') localizacaoTexto = 'Óbito';
 
-        // Puxa metadados empacotados (Arquivos e Dados Sanitários)
         const metadados = obterDadosMetadadosSeguros(gato);
 
         document.getElementById('medicoDadosGerais').innerHTML = `
@@ -624,7 +733,7 @@
             <p><strong>Microchip:</strong> ${gato.microchip}</p>
             <p><strong>Data de Entrada:</strong> ${converterData(gato.data_entrada)}</p>
             <p><strong>Castrado:</strong> ${metadados.castrado || 'Não informado'}</p>
-            <p><strong>Última Vermifugação:</strong> ${metadados.vermifugacao ? converterData(metadados.vermifugacao) : 'Nenhuma cadastrada'}</p>
+            <p><strong>Vermifugação:</strong> ${metadados.vermifugacao ? converterData(metadados.vermifugacao) : 'Nenhuma cadastrada'}</p>
             <p><strong>Setor Atual:</strong> <span style="font-weight:bold; color:${gato.ado_status==='Óbito'?'#64748b':(gato.destino==='cti'?'#ef4444':'#10b981')}">${localizacaoTexto}</span></p>
         `;
 
@@ -635,7 +744,6 @@
         document.getElementById('txtDiagnostico').value = gato.diagnosticos || '';
         document.getElementById('txtObsVet').value = metadados.textoLivre || '';
 
-        // Carrega inputs da nova tela de Manejo
         document.getElementById('manejoCastrado').value = metadados.castrado || 'Não informado';
         document.getElementById('manejoVermifugacao').value = metadados.vermifugacao || '';
 
@@ -646,7 +754,7 @@
         document.getElementById('ctiAlim').value = gato.cti_alim || '';
 
         if (gato.destino === 'cti' && gato.ado_status !== 'Óbito') {
-            document.getElementById('btnSubCti').style.display = "block";
+            document.getElementById('btnSubCti').style.display = "flex";
         } else {
             document.getElementById('btnSubCti').style.display = "none";
         }
@@ -662,6 +770,8 @@
         atualizarListasInternasDoModal(gato);
         mudarSubAba('sub-identificacao', document.querySelector('.sub-btn'));
         document.getElementById('modalProntuario').style.display = 'flex';
+        
+        lucide.createIcons();
     }
 
     async function transferirGatoDeSetor() {
@@ -731,11 +841,10 @@
             if (error) throw error;
             alert('Dados de manejo e sanitários salvos com sucesso!');
             await carregarDadosDoBanco();
-            abrirProntuario(idGatoSelecionado); // Recarrega tela interna
+            abrirProntuario(idGatoSelecionado); 
         } catch(err) { alert("Erro ao salvar dados de manejo: " + err.message); }
     }
 
-    // GERADOR AUTOMÁTICO DA LINHA DO TEMPO (TIMELINE CHRONOLÓGICA)
     function gerarLinhaTempo() {
         const gato = gatos.find(g => g.id === idGatoSelecionado);
         const container = document.getElementById('timelineContainer');
@@ -743,21 +852,19 @@
 
         let eventos = [];
 
-        // Evento 1: Admissão
         if (gato.data_entrada) {
             eventos.push({
-                titulo: "📥 Admissão de Paciente",
+                titulo: "<i data-lucide='inbox' style='width:16px;'></i> Admissão de Paciente",
                 descricao: `Gato inserido no sistema com destino inicial para o setor: ${gato.setor_gatil || gato.setor || 'Gatil Livre'}. Peso inicial: ${gato.peso}kg.`,
                 data: converterData(gato.data_entrada),
                 timestamp: new Date(gato.data_entrada).getTime() || 0
             });
         }
 
-        // Eventos de Exames
         if (Array.isArray(gato.exames)) {
             gato.exames.forEach(e => {
                 eventos.push({
-                    titulo: `🔬 Exame Anexado: ${e.nome}`,
+                    titulo: `<i data-lucide='microscope' style='width:16px;'></i> Exame: ${e.nome}`,
                     descricao: `Resultado reportado: ${e.res}`,
                     data: e.data,
                     timestamp: 0 
@@ -765,11 +872,10 @@
             });
         }
 
-        // Eventos de Tratamento
         if (Array.isArray(gato.tratamentos)) {
             gato.tratamentos.forEach(t => {
                 eventos.push({
-                    titulo: `💊 Prescrição de Fármaco`,
+                    titulo: `<i data-lucide='pill' style='width:16px;'></i> Prescrição`,
                     descricao: `Medicamento: ${t.med} | Dosagem: ${t.dose} | Horários: ${t.hora} (Por: ${t.resp || 'N/I'})`,
                     data: t.data,
                     timestamp: 0
@@ -777,11 +883,10 @@
             });
         }
 
-        // Eventos de Vacinas
         if (Array.isArray(gato.vacinas)) {
             gato.vacinas.forEach(v => {
                 eventos.push({
-                    titulo: `💉 Imunização Aplicada: ${v.nome}`,
+                    titulo: `<i data-lucide='syringe' style='width:16px;'></i> Imunização: ${v.nome}`,
                     descricao: `Vacina aplicada com sucesso. Próxima dose estimada para: ${v.prox || 'Não exige'}`,
                     data: v.aplicar,
                     timestamp: 0
@@ -789,11 +894,10 @@
             });
         }
 
-        // Eventos de Evolução do CTI
         if (Array.isArray(gato.cti_evolucao)) {
             gato.cti_evolucao.forEach(ev => {
                 eventos.push({
-                    titulo: `📈 Anotação de Evolução (Plantão)`,
+                    titulo: `<i data-lucide='activity' style='width:16px;'></i> Evolução (Plantão)`,
                     descricao: ev.texto,
                     data: ev.data,
                     timestamp: 0
@@ -801,12 +905,11 @@
             });
         }
 
-        // Arquivos Gerais anexados
         const metadados = obterDadosMetadadosSeguros(gato);
         if (Array.isArray(metadados.arquivos)) {
             metadados.arquivos.forEach(arq => {
                 eventos.push({
-                    titulo: `📂 Arquivo Externo Armazenado`,
+                    titulo: `<i data-lucide='file-text' style='width:16px;'></i> Arquivo Anexado`,
                     descricao: `Documento PDF anexado: "${arq.descricao}"`,
                     data: arq.data,
                     timestamp: 0
@@ -815,22 +918,23 @@
         }
 
         if(eventos.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum evento registrado no histórico para montar a linha do tempo.</p>';
+            container.innerHTML = '<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhum evento registrado no histórico.</p>';
             return;
         }
 
-        // Renderiza na tela
         eventos.forEach(ev => {
             container.innerHTML += `
                 <div class="tl-container">
                     <div class="tl-content">
                         <h4>${ev.titulo}</h4>
                         <p>${ev.descricao}</p>
-                        <span>⏱️ Ocorrido/Registrado em: ${ev.data}</span>
+                        <span><i data-lucide='clock' style='width:12px;'></i> Registrado em: ${ev.data}</span>
                     </div>
                 </div>
             `;
         });
+        
+        lucide.createIcons();
     }
 
     async function salvarParametrosCti() {
@@ -910,7 +1014,6 @@
             }
             return; 
         } 
-        // LÓGICA DE SALVAMENTO PARA ARQUIVOS GERAIS EM PDF
         else if (tipo === 'arquivos') {
             const descricao = document.getElementById('docDescricao').value || 'Documento PDF sem título';
             const arquivoInput = document.getElementById('docArquivoPdf').files[0];
@@ -984,41 +1087,50 @@
 
     function atualizarListasInternasDoModal(gato) {
         document.getElementById('listaMedExames').innerHTML = (gato.exames || []).map((e, index) => {
-            const btnPdf = e.pdf ? `<button class="btn-pdf-link" onclick="abrirJanelaPdf('${e.pdf}')">📄 Abrir PDF</button>` : '';
+            const btnPdf = e.pdf ? `<button class="btn-pdf-link hide-on-print" onclick="abrirJanelaPdf('${e.pdf}')"><i data-lucide="external-link"></i> Abrir PDF</button>` : '';
             return `
                 <div class="item-registro">
                     <div class="item-registro-content">
-                        📋 <strong>${e.nome}</strong> - Resultado: ${e.res} 
-                        <small>⏱️ Gravado em: ${e.data}</small>
+                        <strong>${e.nome}</strong> - Resultado: ${e.res} 
+                        <small>Gravado em: ${e.data}</small>
                     </div>
                     ${btnPdf}
                 </div>
             `;
         }).join('');
 
-        // Atualiza a visualização da nova aba de arquivos gerais em PDF
         const metadados = obterDadosMetadadosSeguros(gato);
         document.getElementById('listaArquivosGerais').innerHTML = (metadados.arquivos || []).map(arq => `
             <div class="item-registro">
                 <div class="item-registro-content">
-                    📂 <strong>${arq.descricao}</strong>
-                    <small>⏱️ Upload feito em: ${arq.data}</small>
+                    <strong>${arq.descricao}</strong>
+                    <small>Upload feito em: ${arq.data}</small>
                 </div>
-                <button class="btn-pdf-link" style="background:#16a34a;" onclick="abrirJanelaPdf('${arq.pdfBase64}')">📄 Visualizar Documento</button>
+                <button class="btn-pdf-link hide-on-print" style="background:#16a34a;" onclick="abrirJanelaPdf('${arq.pdfBase64}')"><i data-lucide="file-text"></i> Ver Documento</button>
             </div>
         `).join('');
 
         document.getElementById('listaMedTratamentos').innerHTML = (gato.tratamentos || []).map(t => `
-            <div class="item-registro">💊 <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp} <small>⏱️ Prescrito em: ${t.data}</small></div>
+            <div class="item-registro">
+                <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Resp: ${t.resp}
+                <small>Prescrito em: ${t.data}</small>
+            </div>
         `).join('');
 
         document.getElementById('listaMedVacinas').innerHTML = (gato.vacinas || []).map(v => `
-            <div class="item-registro">💉 <strong>${v.nome}</strong> | Aplicada em: ${v.aplicar || 'N/A'} | Próxima Dose: <span style="color:blue">${v.prox || 'Não exige'}</span></div>
+            <div class="item-registro">
+                <strong>${v.nome}</strong> | Aplicada em: ${v.aplicar || 'N/A'} | Próxima Dose: <span style="color:blue">${v.prox || 'Não exige'}</span>
+            </div>
         `).join('');
 
         document.getElementById('listaMedEvolucao').innerHTML = (gato.cti_evolucao || []).map(ev => `
-            <div class="item-registro" style="border-left: 3px solid #ef4444;">📈 ${ev.texto} <small>⏱️ Registro de Plantão: ${ev.data}</small></div>
+            <div class="item-registro" style="border-left: 4px solid #ef4444;">
+                ${ev.texto} 
+                <small>Registro de Plantão: ${ev.data}</small>
+            </div>
         `).join('');
+        
+        lucide.createIcons();
     }
 
     function converterData(dataString) {

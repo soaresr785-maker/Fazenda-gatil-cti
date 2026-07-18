@@ -1085,15 +1085,34 @@
             return;
         }
         else if (tipo === 'tratamentos') {
-            const med = document.getElementById('tratoMed').value;
+            const med = document.getElementById('tratoMed').value.trim();
             const dose = document.getElementById('tratoDose').value;
             const hora = document.getElementById('tratoHorario').value;
             const resp = document.getElementById('tratoResp').value;
-            if(!med) return;
-            const lista = Array.isArray(gato.tratamentos) ? gato.tratamentos : [];
+            
+            if (!med) {
+                alert("O campo Medicamento é obrigatório para registrar a prescrição!");
+                return;
+            }
+            
+            let lista = [];
+            if (Array.isArray(gato.tratamentos)) {
+                lista = [...gato.tratamentos];
+            } else if (typeof gato.tratamentos === 'string' && gato.tratamentos !== '') {
+                try { 
+                    lista = JSON.parse(gato.tratamentos); 
+                } catch(e) { 
+                    lista = []; 
+                }
+            }
+            
             lista.unshift({ med, dose, hora, resp, data: dataAgora });
             dadosAtualizados = { tratamentos: lista };
-            document.getElementById('tratoMed').value = ''; document.getElementById('tratoDose').value = ''; document.getElementById('tratoHorario').value = ''; document.getElementById('tratoResp').value = '';
+            
+            document.getElementById('tratoMed').value = ''; 
+            document.getElementById('tratoDose').value = ''; 
+            document.getElementById('tratoHorario').value = ''; 
+            document.getElementById('tratoResp').value = '';
         }
         else if (tipo === 'vacinas') {
             const nome = document.getElementById('vacNome').value;
@@ -1152,14 +1171,32 @@
             </div>
         `).join('');
 
-        document.getElementById('listaMedTratamentos').innerHTML = (gato.tratamentos || []).map(t => `
-            <div class="item-registro">
-                <div class="item-registro-content">
-                    <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Aplicação por: ${t.resp}
-                    <small>Prescrito em: ${t.data}</small>
-                </div>
-            </div>
-        `).join('');
+        let tratamentosSeguros = [];
+        if (Array.isArray(gato.tratamentos)) {
+            tratamentosSeguros = gato.tratamentos;
+        } else if (typeof gato.tratamentos === 'string') {
+            try { 
+                tratamentosSeguros = JSON.parse(gato.tratamentos) || []; 
+            } catch(e) { 
+                tratamentosSeguros = []; 
+            }
+        }
+
+        const divTratamentos = document.getElementById('listaMedTratamentos');
+        if (divTratamentos) {
+            if (tratamentosSeguros.length === 0) {
+                divTratamentos.innerHTML = '<p style="color:var(--muted); font-size:13px; font-style:italic;">Nenhum tratamento registrado.</p>';
+            } else {
+                divTratamentos.innerHTML = tratamentosSeguros.map(t => `
+                    <div class="item-registro">
+                        <div class="item-registro-content">
+                            <strong>${t.med}</strong> | Dose: ${t.dose} | Horário: ${t.hora} | Aplicação por: ${t.resp || 'N/I'}
+                            <small>Prescrito em: ${t.data}</small>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
 
         document.getElementById('listaMedVacinas').innerHTML = (gato.vacinas || []).map(v => `
             <div class="item-registro">

@@ -4,7 +4,7 @@
   "short_name": "FelineOS",
   "description": "Gestão clínica veterinária para pacientes felinos.",
   "lang": "pt-BR",
-  "start_url": "./",
+  "start_url": "./vetflow-moderno.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f4ff",

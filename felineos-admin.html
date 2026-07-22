@@ -97,7 +97,7 @@
         </header>
         <main>
             <section class="hero">
-                <div><span><i data-lucide="lock-keyhole"></i> Área restrita</span><h1>Gestão segura da equipe</h1><p>Aprove contas, defina a função clínica e bloqueie acessos sem misturar administração com a rotina dos prontuários.</p></div>
+                <div><span><i data-lucide="lock-keyhole"></i> Área restrita</span><h1>Gestão segura da equipe</h1><p>Aprove contas e escolha entre acesso clínico completo ou visualização geral sem prontuários.</p></div>
                 <i data-lucide="users-round"></i>
             </section>
             <section class="resumo" aria-label="Resumo das contas">
@@ -105,7 +105,7 @@
                 <div class="resumo-card"><span>Autorizadas</span><strong id="totalAtivas">0</strong></div>
                 <div class="resumo-card"><span>Aguardando</span><strong id="totalPendentes">0</strong></div>
             </section>
-            <div class="aviso"><i data-lucide="shield-check"></i><div><strong>Segurança aplicada no banco de dados.</strong><br>Somente administradores podem alterar funções. Apenas Veterinários e Auxiliares ativos conseguem acessar os prontuários.</div></div>
+            <div class="aviso"><i data-lucide="shield-check"></i><div><strong>Segurança aplicada no banco de dados.</strong><br>Veterinários e Auxiliares acessam prontuários. Visualizadores consultam somente informações gerais dos animais.</div></div>
             <div class="titulo-lista"><h2>Contas cadastradas</h2><button class="btn-secundario" type="button" onclick="carregarEquipe()"><i data-lucide="refresh-cw"></i> Atualizar</button></div>
             <div id="listaEquipe" class="lista"><p class="vazio">Carregando equipe...</p></div>
         </main>
@@ -122,7 +122,7 @@
 
         function icones() { if (window.lucide) lucide.createIcons(); }
         function escapar(valor) { return String(valor ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-        function nomeFuncao(funcao) { return funcao === 'veterinario' ? 'Veterinário' : funcao === 'auxiliar' ? 'Auxiliar Veterinário' : 'Pendente'; }
+        function nomeFuncao(funcao) { return funcao === 'veterinario' ? 'Veterinário' : funcao === 'auxiliar' ? 'Auxiliar Veterinário' : funcao === 'visualizador' ? 'Visualizador (sem prontuário)' : 'Pendente'; }
         function mostrarToast(texto, erro=false) { const el=document.getElementById('toast'); el.textContent=texto; el.classList.toggle('erro',erro); el.hidden=false; clearTimeout(timerToast); timerToast=setTimeout(()=>el.hidden=true,3500); }
 
         async function entrar(event) {
@@ -170,18 +170,19 @@
 
         function renderizarEquipe(perfis) {
             document.getElementById('totalContas').textContent=perfis.length;
-            document.getElementById('totalAtivas').textContent=perfis.filter(p=>p.ativo&&['veterinario','auxiliar'].includes(p.funcao)).length;
+            document.getElementById('totalAtivas').textContent=perfis.filter(p=>p.ativo&&['veterinario','auxiliar','visualizador'].includes(p.funcao)).length;
             document.getElementById('totalPendentes').textContent=perfis.filter(p=>!p.ativo||p.funcao==='pendente').length;
             const lista=document.getElementById('listaEquipe');
             if (!perfis.length) { lista.innerHTML='<p class="vazio">Nenhuma conta cadastrada.</p>'; return; }
             lista.innerHTML=perfis.map(perfil=>{
                 const proprio=perfil.id===usuarioAtual?.id;
-                const autorizado=perfil.ativo&&['veterinario','auxiliar'].includes(perfil.funcao);
+                const autorizado=perfil.ativo&&['veterinario','auxiliar','visualizador'].includes(perfil.funcao);
+                const acessoRestrito=perfil.ativo&&perfil.funcao==='visualizador';
                 const pendente=proprio?'':`<option value="pendente" ${perfil.funcao==='pendente'?'selected':''}>Pendente</option>`;
                 return `<article class="card">
                     <div class="identidade"><strong>${escapar(perfil.nome||'Nome não informado')}${perfil.administrador?'<span class="badge">Administrador</span>':''}</strong><small>${escapar(perfil.email||'')}</small></div>
-                    <div class="field"><label for="funcao-${perfil.id}">Função clínica</label><select id="funcao-${perfil.id}">${pendente}<option value="veterinario" ${perfil.funcao==='veterinario'?'selected':''}>Veterinário</option><option value="auxiliar" ${perfil.funcao==='auxiliar'?'selected':''}>Auxiliar Veterinário</option></select></div>
-                    <div><label class="controle"><input id="ativo-${perfil.id}" type="checkbox" ${perfil.ativo?'checked':''} ${proprio?'disabled':''}> Conta ativa</label><span class="status ${autorizado?'ativo':''}">${autorizado?'Autorizado':'Sem acesso'}</span></div>
+                    <div class="field"><label for="funcao-${perfil.id}">Nível de acesso</label><select id="funcao-${perfil.id}">${pendente}<option value="veterinario" ${perfil.funcao==='veterinario'?'selected':''}>Veterinário</option><option value="auxiliar" ${perfil.funcao==='auxiliar'?'selected':''}>Auxiliar Veterinário</option><option value="visualizador" ${perfil.funcao==='visualizador'?'selected':''}>Visualizador (sem prontuário)</option></select></div>
+                    <div><label class="controle"><input id="ativo-${perfil.id}" type="checkbox" ${perfil.ativo?'checked':''} ${proprio?'disabled':''}> Conta ativa</label><span class="status ${autorizado?'ativo':''}">${acessoRestrito?'Acesso restrito':autorizado?'Acesso clínico':'Sem acesso'}</span></div>
                     <button id="salvar-${perfil.id}" class="salvar" type="button" onclick="salvarPermissao('${perfil.id}')"><i data-lucide="save"></i> Salvar</button>
                 </article>`;
             }).join('');

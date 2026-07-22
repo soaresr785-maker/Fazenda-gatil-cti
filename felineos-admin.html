@@ -124,6 +124,12 @@
         function escapar(valor) { return String(valor ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
         function nomeFuncao(funcao) { return funcao === 'veterinario' ? 'Veterinário' : funcao === 'auxiliar' ? 'Auxiliar Veterinário' : funcao === 'visualizador' ? 'Visualizador (sem prontuário)' : 'Pendente'; }
         function mostrarToast(texto, erro=false) { const el=document.getElementById('toast'); el.textContent=texto; el.classList.toggle('erro',erro); el.hidden=false; clearTimeout(timerToast); timerToast=setTimeout(()=>el.hidden=true,3500); }
+        function mensagemErroPermissao(erro) {
+            if (erro?.code === 'PGRST202' || /atualizar_permissao_usuario/i.test(erro?.message || '')) return 'Atualize o banco executando o arquivo SQL de correção das permissões.';
+            if (erro?.code === '42501') return erro.message || 'Sua conta não possui permissão administrativa.';
+            if (erro?.code === '23514') return 'O nível selecionado ainda não está liberado no banco de dados.';
+            return 'Não foi possível salvar a permissão. Atualize a página e tente novamente.';
+        }
 
         async function entrar(event) {
             event.preventDefault();
@@ -198,12 +204,20 @@
             const botao=document.getElementById(`salvar-${id}`);
             botao.disabled=true;
             try {
-                const { error }=await _supabase.from('perfis').update({funcao,ativo}).eq('id',id);
+                const { error }=await _supabase.rpc('atualizar_permissao_usuario',{
+                    p_perfil_id:id,
+                    p_funcao:funcao,
+                    p_ativo:ativo
+                });
                 if (error) throw error;
                 if (proprio) perfilAtual.funcao=funcao;
                 await carregarEquipe();
                 mostrarToast(`Permissão salva: ${nomeFuncao(funcao)}.`);
-            } catch (erro) { console.error(erro); botao.disabled=false; mostrarToast('Não foi possível salvar a permissão.',true); }
+            } catch (erro) {
+                console.error('Falha ao salvar permissão:',{code:erro?.code,message:erro?.message,details:erro?.details,hint:erro?.hint});
+                botao.disabled=false;
+                mostrarToast(mensagemErroPermissao(erro),true);
+            }
         }
 
         async function iniciar() {

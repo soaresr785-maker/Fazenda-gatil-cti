@@ -1,8 +1,12 @@
-const CACHE = 'felineos-gatil-cti-v27';
+const CACHE = 'felineos-gatil-cti-v29';
 const ARQUIVOS_DO_APP = [
   './vetflow-moderno.html',
   './vetflow-manifest.webmanifest',
   './assets/vetflow-app-icon.svg',
+  './assets/felineos-icon-180.png',
+  './assets/felineos-icon-192.png',
+  './assets/felineos-icon-512.png',
+  './assets/felineos-icon-maskable-512.png',
   './assets/hero-gatil-cti-completo.png'
 ];
 
@@ -26,16 +30,32 @@ self.addEventListener('fetch', (evento) => {
   const url = new URL(evento.request.url);
   if (url.origin !== self.location.origin) return;
 
-  evento.respondWith(
-    caches.match(evento.request).then((emCache) => {
-      if (emCache) return emCache;
-      return fetch(evento.request)
+  if (evento.request.mode === 'navigate' || evento.request.destination === 'document') {
+    evento.respondWith(
+      fetch(evento.request)
         .then((resposta) => {
           const copia = resposta.clone();
           caches.open(CACHE).then((cache) => cache.put(evento.request, copia));
           return resposta;
         })
-        .catch(() => caches.match('./vetflow-moderno.html'));
+        .catch(() => caches.match(evento.request).then((emCache) => emCache || caches.match('./vetflow-moderno.html')))
+    );
+    return;
+  }
+
+  evento.respondWith(
+    caches.match(evento.request).then((emCache) => {
+      const atualizacao = fetch(evento.request)
+        .then((resposta) => {
+          if (resposta && resposta.ok) {
+            const copia = resposta.clone();
+            caches.open(CACHE).then((cache) => cache.put(evento.request, copia));
+          }
+          return resposta;
+        })
+        .catch(() => emCache);
+
+      return emCache || atualizacao;
     })
   );
 });

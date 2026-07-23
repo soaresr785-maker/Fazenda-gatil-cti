@@ -1,6 +1,6 @@
-const CACHE = 'felineos-gatil-cti-v29';
+const CACHE = 'felineos-gatil-cti-v30';
 const ARQUIVOS_DO_APP = [
-  './vetflow-moderno.html',
+  './',
   './vetflow-manifest.webmanifest',
   './assets/vetflow-app-icon.svg',
   './assets/felineos-icon-180.png',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (evento) => {
           caches.open(CACHE).then((cache) => cache.put(evento.request, copia));
           return resposta;
         })
-        .catch(() => caches.match(evento.request).then((emCache) => emCache || caches.match('./vetflow-moderno.html')))
+        .catch(() => caches.match(evento.request).then((emCache) => emCache || caches.match('./')))
     );
     return;
   }

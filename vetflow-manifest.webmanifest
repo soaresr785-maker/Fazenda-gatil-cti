@@ -1,11 +1,11 @@
 {
-  "id": "./vetflow-moderno.html",
+  "id": "./",
   "name": "FelineOS Gatil/CTI",
   "short_name": "FelineOS",
   "description": "Gestão clínica veterinária para pacientes felinos.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "./vetflow-moderno.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],

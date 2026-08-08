@@ -112,12 +112,6 @@
                 <div class="resumo-card"><span>Aguardando</span><strong id="totalPendentes">0</strong></div>
             </section>
             <div class="aviso"><i data-lucide="shield-check"></i><div><strong>Segurança aplicada no banco de dados.</strong><br>Veterinários, auxiliares e administradores acessam todos os prontuários da organização. Visualizadores consultam somente informações gerais.</div></div>
-            <section class="convite" aria-labelledby="conviteTitulo">
-                <div class="convite-copy"><strong id="conviteTitulo">Código para novas contas</strong><small>Envie somente a pessoas autorizadas. Toda conta criada continua pendente até você aprová-la.</small></div>
-                <div class="field"><label for="codigoConvite">Código da organização</label><input id="codigoConvite" type="text" readonly value="Carregando..."></div>
-                <button class="btn-secundario" type="button" onclick="copiarCodigoConvite()"><i data-lucide="copy"></i> Copiar</button>
-                <button class="btn-secundario" type="button" onclick="renovarCodigoConvite()"><i data-lucide="refresh-cw"></i> Gerar novo</button>
-            </section>
             <div class="titulo-lista"><h2>Contas cadastradas</h2><button class="btn-secundario" type="button" onclick="carregarEquipe()"><i data-lucide="refresh-cw"></i> Atualizar</button></div>
             <div id="listaEquipe" class="lista"><p class="vazio">Carregando equipe...</p></div>
         </main>
@@ -173,7 +167,7 @@
             if (!perfilAtual?.ativo || !perfilAtual?.administrador) { document.getElementById('negadoView').hidden=false; icones(); return; }
             document.getElementById('usuarioAtual').textContent = usuarioAtual.email || 'Administrador';
             document.getElementById('appView').hidden = false;
-            await Promise.all([carregarOrganizacao(), carregarCodigoConvite(), carregarEquipe()]);
+            await Promise.all([carregarOrganizacao(), carregarEquipe()]);
             icones();
         }
 
@@ -187,48 +181,6 @@
                 document.getElementById('nomeOrganizacao').textContent = data?.nome || 'Sua organização';
             } catch (erro) {
                 console.error('Falha ao carregar organização:', erro);
-            }
-        }
-
-        async function carregarCodigoConvite() {
-            const campo = document.getElementById('codigoConvite');
-            campo.value = 'Carregando...';
-            try {
-                const { data, error } = await _supabase.rpc('obter_codigo_convite_organizacao');
-                if (error) throw error;
-                campo.value = data || 'Não disponível';
-            } catch (erro) {
-                console.error('Falha ao carregar código de convite:', erro);
-                campo.value = 'Configuração pendente no Supabase';
-                campo.title = 'Execute o arquivo supabase-multitenant-seguro.sql no SQL Editor do Supabase.';
-            }
-        }
-
-        async function copiarCodigoConvite() {
-            const campo = document.getElementById('codigoConvite');
-            const codigo = campo.value.trim();
-            if (!/^[0-9a-f-]{36}$/i.test(codigo)) return mostrarToast('O código ainda não está disponível.', true);
-            try {
-                await navigator.clipboard.writeText(codigo);
-                mostrarToast('Código de convite copiado.');
-            } catch (_erro) {
-                campo.focus();
-                campo.select();
-                document.execCommand('copy');
-                mostrarToast('Código de convite copiado.');
-            }
-        }
-
-        async function renovarCodigoConvite() {
-            if (!confirm('Gerar um novo código? O código atual deixará de funcionar para novos cadastros.')) return;
-            try {
-                const { data, error } = await _supabase.rpc('renovar_codigo_convite_organizacao');
-                if (error) throw error;
-                document.getElementById('codigoConvite').value = data;
-                mostrarToast('Novo código de convite gerado.');
-            } catch (erro) {
-                console.error('Falha ao renovar código:', erro);
-                mostrarToast('Não foi possível gerar um novo código.', true);
             }
         }
 

@@ -1,4 +1,4 @@
-const CACHE = 'felineos-gatil-cti-v63';
+const CACHE = 'felineos-gatil-cti-v64';
 const ARQUIVOS_DO_APP = [
   './',
   './vetflow-manifest.webmanifest',
